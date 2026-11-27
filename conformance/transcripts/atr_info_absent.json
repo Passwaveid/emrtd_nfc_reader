@@ -1,0 +1,49 @@
+{
+  "transcript": "atr_info_absent",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "EF.ATR/INFO on an LDS1-only chip. MF select accepted, SELECT 2F01 refused with 6A 82; the refusal propagates as a typed error and PassportReader's probe records the file as absent. runners:[\"dart\"]; upstream has no EF.ATR/INFO read.",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "readAtrInfo"
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "00",
+        "p2": "0c",
+        "data": "3f00",
+        "le": null
+      },
+      "wire": "00a4000c023f00",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "2f01",
+        "le": null
+      },
+      "wire": "00a4020c022f01",
+      "resp": {
+        "data": "",
+        "sw": "6a82"
+      }
+    }
+  ],
+  "expect": {
+    "error": "ResponseError"
+  }
+}

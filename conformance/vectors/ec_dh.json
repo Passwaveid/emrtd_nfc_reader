@@ -1,0 +1,917 @@
+{
+  "suite": "ec_dh",
+  "schemaVersion": 1,
+  "description": "EC/DH primitive layer for the PACE port. Sources: RFC 7027 (Brainpool ECDH), RFC 5903 (NIST P-256/384 ECDH), ICAO 9303 P11 App G.1/G.2 mapping chains (values from the tables, not the APDU dumps), RFC 5114 1024/160 group constants (as case inputs); synthetic registry-coverage and leading-zero cases from a python oracle validated against the published vectors above. Rejection cases pin ecPointDecode (TR-03111 3.2.1 on-curve MUST; infinity/hybrid stricter-than-oct2point rejects are dart-only).",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "RFC 7027 A.1 brainpoolp256r1: QA = dA*G",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "d": "81db1ee100150ff2ea338d708271be38300cb54241d79950f77b063039804f1d"
+      },
+      "expect": {
+        "out": {
+          "point": "0444106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be58ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089bdc"
+        }
+      }
+    },
+    {
+      "name": "RFC 7027 A.1 brainpoolp256r1: QB = dB*G",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "d": "55e40bc41e37e3e2ad25c3c6654511ffa8474a91a0032087593852d3e7d76bd3"
+      },
+      "expect": {
+        "out": {
+          "point": "048d2d688c6cf93e1160ad04cc4429117dc2c41825e1e9fca0addd34e6f1b39f7b990c57520812be512641e47034832106bc7d3e8dd0e4c7f1136d7006547cec6a"
+        }
+      }
+    },
+    {
+      "name": "RFC 7027 A.1 brainpoolp256r1: Z = x(dA*QB), field-length padded",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "d": "81db1ee100150ff2ea338d708271be38300cb54241d79950f77b063039804f1d",
+        "peer": "048d2d688c6cf93e1160ad04cc4429117dc2c41825e1e9fca0addd34e6f1b39f7b990c57520812be512641e47034832106bc7d3e8dd0e4c7f1136d7006547cec6a"
+      },
+      "expect": {
+        "out": {
+          "secret": "89afc39d41d3b327814b80940b042590f96556ec91e6ae7939bce31f3a18bf2b"
+        }
+      }
+    },
+    {
+      "name": "RFC 7027 A.2 brainpoolp384r1: QA = dA*G",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp384r1",
+        "d": "1e20f5e048a5886f1f157c74e91bde2b98c8b52d58e5003d57053fc4b0bd65d6f15eb5d1ee1610df870795143627d042"
+      },
+      "expect": {
+        "out": {
+          "point": "0468b665dd91c195800650cdd363c625f4e742e8134667b767b1b476793588f885ab698c852d4a6e77a252d6380fcaf06855bc91a39c9ec01dee36017b7d673a931236d2f1f5c83942d049e3fa20607493e0d038ff2fd30c2ab67d15c85f7faa59"
+        }
+      }
+    },
+    {
+      "name": "RFC 7027 A.2 brainpoolp384r1: QB = dB*G",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp384r1",
+        "d": "032640bc6003c59260f7250c3db58ce647f98e1260acce4acda3dd869f74e01f8ba5e0324309db6a9831497abac96670"
+      },
+      "expect": {
+        "out": {
+          "point": "044d44326f269a597a5b58bba565da5556ed7fd9a8a9eb76c25f46db69d19dc8ce6ad18e404b15738b2086df37e71d1eb462d692136de56cbe93bf5fa3188ef58bc8a3a0ec6c1e151a21038a42e9185329b5b275903d192f8d4e1f32fe9cc78c48"
+        }
+      }
+    },
+    {
+      "name": "RFC 7027 A.2 brainpoolp384r1: Z = x(dA*QB), field-length padded",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "brainpoolp384r1",
+        "d": "1e20f5e048a5886f1f157c74e91bde2b98c8b52d58e5003d57053fc4b0bd65d6f15eb5d1ee1610df870795143627d042",
+        "peer": "044d44326f269a597a5b58bba565da5556ed7fd9a8a9eb76c25f46db69d19dc8ce6ad18e404b15738b2086df37e71d1eb462d692136de56cbe93bf5fa3188ef58bc8a3a0ec6c1e151a21038a42e9185329b5b275903d192f8d4e1f32fe9cc78c48"
+      },
+      "expect": {
+        "out": {
+          "secret": "0bd9d3a7ea0b3d519d09d8e48d0785fb744a6b355e6304bc51c229fbbce239bbadf6403715c35d4fb2a5444f575d4f42"
+        }
+      }
+    },
+    {
+      "name": "RFC 7027 A.3 brainpoolp512r1: QA = dA*G",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp512r1",
+        "d": "16302ff0dbbb5a8d733dab7141c1b45acbc8715939677f6a56850a38bd87bd59b09e80279609ff333eb9d4c061231fb26f92eeb04982a5f1d1764cad57665422"
+      },
+      "expect": {
+        "out": {
+          "point": "040a420517e406aac0acdce90fcd71487718d3b953efd7fbec5f7f27e28c6149999397e91e029e06457db2d3e640668b392c2a7e737a7f0bf04436d11640fd09fd72e6882e8db28aad36237cd25d580db23783961c8dc52dfa2ec138ad472a0fcef3887cf62b623b2a87de5c588301ea3e5fc269b373b60724f5e82a6ad147fde7"
+        }
+      }
+    },
+    {
+      "name": "RFC 7027 A.3 brainpoolp512r1: QB = dB*G",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp512r1",
+        "d": "230e18e1bcc88a362fa54e4ea3902009292f7f8033624fd471b5d8ace49d12cfabbc19963dab8e2f1eba00bffb29e4d72d13f2224562f405cb80503666b25429"
+      },
+      "expect": {
+        "out": {
+          "point": "049d45f66de5d67e2e6db6e93a59ce0bb48106097ff78a081de781cdb31fce8ccbaaea8dd4320c4119f1e9cd437a2eab3731fa9668ab268d871deda55a5473199f2fdc313095bcdd5fb3a91636f07a959c8e86b5636a1e930e8396049cb481961d365cc11453a06c719835475b12cb52fc3c383bce35e27ef194512b71876285fa"
+        }
+      }
+    },
+    {
+      "name": "RFC 7027 A.3 brainpoolp512r1: Z = x(dA*QB), field-length padded",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "brainpoolp512r1",
+        "d": "16302ff0dbbb5a8d733dab7141c1b45acbc8715939677f6a56850a38bd87bd59b09e80279609ff333eb9d4c061231fb26f92eeb04982a5f1d1764cad57665422",
+        "peer": "049d45f66de5d67e2e6db6e93a59ce0bb48106097ff78a081de781cdb31fce8ccbaaea8dd4320c4119f1e9cd437a2eab3731fa9668ab268d871deda55a5473199f2fdc313095bcdd5fb3a91636f07a959c8e86b5636a1e930e8396049cb481961d365cc11453a06c719835475b12cb52fc3c383bce35e27ef194512b71876285fa"
+      },
+      "expect": {
+        "out": {
+          "secret": "a7927098655f1f9976fa50a9d566865dc530331846381c87256baf3226244b76d36403c024d7bbf0aa0803eaff405d3d24f11a9b5c0bef679fe1454b21c4cd1f"
+        }
+      }
+    },
+    {
+      "name": "RFC 5903 8.1 secp256r1: g^i",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "secp256r1",
+        "d": "c88f01f510d9ac3f70a292daa2316de544e9aab8afe84049c62a9c57862d1433"
+      },
+      "expect": {
+        "out": {
+          "point": "04dad0b65394221cf9b051e1feca5787d098dfe637fc90b9ef945d0c37725811805271a0461cdb8252d61f1c456fa3e59ab1f45b33accf5f58389e0577b8990bb3"
+        }
+      }
+    },
+    {
+      "name": "RFC 5903 8.1 secp256r1: g^r",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "secp256r1",
+        "d": "c6ef9c5d78ae012a011164acb397ce2088685d8f06bf9be0b283ab46476bee53"
+      },
+      "expect": {
+        "out": {
+          "point": "04d12dfb5289c8d4f81208b70270398c342296970a0bccb74c736fc7554494bf6356fbf3ca366cc23e8157854c13c58d6aac23f046ada30f8353e74f33039872ab"
+        }
+      }
+    },
+    {
+      "name": "RFC 5903 8.1 secp256r1: shared secret girx",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "secp256r1",
+        "d": "c88f01f510d9ac3f70a292daa2316de544e9aab8afe84049c62a9c57862d1433",
+        "peer": "04d12dfb5289c8d4f81208b70270398c342296970a0bccb74c736fc7554494bf6356fbf3ca366cc23e8157854c13c58d6aac23f046ada30f8353e74f33039872ab"
+      },
+      "expect": {
+        "out": {
+          "secret": "d6840f6b42f6edafd13116e0e12565202fef8e9ece7dce03812464d04b9442de"
+        }
+      }
+    },
+    {
+      "name": "RFC 5903 8.2 secp384r1: g^i",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "secp384r1",
+        "d": "099f3c7034d4a2c699884d73a375a67f7624ef7c6b3c0f160647b67414dce655e35b538041e649ee3faef896783ab194"
+      },
+      "expect": {
+        "out": {
+          "point": "04667842d7d180ac2cde6f74f37551f55755c7645c20ef73e31634fe72b4c55ee6de3ac808acb4bdb4c88732aee95f41aa9482ed1fc0eeb9cafc4984625ccfc23f65032149e0e144ada024181535a0f38eeb9fcff3c2c947dae69b4c634573a81c"
+        }
+      }
+    },
+    {
+      "name": "RFC 5903 8.2 secp384r1: g^r",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "secp384r1",
+        "d": "41cb0779b4bdb85d47846725fbec3c9430fab46cc8dc5060855cc9bda0aa2942e0308312916b8ed2960e4bd55a7448fc"
+      },
+      "expect": {
+        "out": {
+          "point": "04e558dbef53eecde3d3fccfc1aea08a89a987475d12fd950d83cfa41732bc509d0d1ac43a0336def96fda41d0774a3571dcfbec7aacf3196472169e838430367f66eebe3c6e70c416dd5f0c68759dd1fff83fa40142209dff5eaad96db9e6386c"
+        }
+      }
+    },
+    {
+      "name": "RFC 5903 8.2 secp384r1: shared secret girx",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "secp384r1",
+        "d": "099f3c7034d4a2c699884d73a375a67f7624ef7c6b3c0f160647b67414dce655e35b538041e649ee3faef896783ab194",
+        "peer": "04e558dbef53eecde3d3fccfc1aea08a89a987475d12fd950d83cfa41732bc509d0d1ac43a0336def96fda41d0774a3571dcfbec7aacf3196472169e838430367f66eebe3c6e70c416dd5f0c68759dd1fff83fa40142209dff5eaad96db9e6386c"
+      },
+      "expect": {
+        "out": {
+          "secret": "11187331c279962d93d604243fd592cb9d0a926f422e47187521287e7156c5c4d603135569b9e9d09cf5d4a270f59746"
+        }
+      }
+    },
+    {
+      "name": "synthetic secp192r1: QA = dA*G (registry-coverage case, python oracle)",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "secp192r1",
+        "d": "0123456789abcdef"
+      },
+      "expect": {
+        "out": {
+          "point": "04f262420ea5f28e5140716def549d276bba81e680facf2ed466e6151154abb7387156e93fa6955e643082215f0c1718e2"
+        }
+      }
+    },
+    {
+      "name": "synthetic secp192r1: shared secret x (registry-coverage case, python oracle)",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "secp192r1",
+        "d": "0123456789abcdef",
+        "peer": "045de22286ce47228bc32b04fce2cafe9b3bc2ea0ecddbd0c35adfe4d45ab37446c427cab61910f5d84de0d51ff2baea85"
+      },
+      "expect": {
+        "out": {
+          "secret": "cc7b75006230c709c446b60b95d6fd12948acbb656321167"
+        }
+      }
+    },
+    {
+      "name": "synthetic secp224r1: QA = dA*G (registry-coverage case, python oracle)",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "secp224r1",
+        "d": "0123456789abcdef"
+      },
+      "expect": {
+        "out": {
+          "point": "0409773973eb65b19439e795be5cacf515fa5b065f1d9c31be24f3f8d0ea89075e0194643852dd8676cc41c2873c61f92c5e715caf5515b9e5"
+        }
+      }
+    },
+    {
+      "name": "synthetic secp224r1: shared secret x (registry-coverage case, python oracle)",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "secp224r1",
+        "d": "0123456789abcdef",
+        "peer": "04483755addd97a793fda94c2aa9903def5803a7fa57487652398e66675e95ec561466deb63708c312be7f386bc2d6f818eed9405ba5dab7b5"
+      },
+      "expect": {
+        "out": {
+          "secret": "e260110ceacd9d87daa57be0c8efa0dfb067f56636e7914244bc9da5"
+        }
+      }
+    },
+    {
+      "name": "synthetic secp521r1: QA = dA*G (registry-coverage case, python oracle)",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "secp521r1",
+        "d": "0123456789abcdef"
+      },
+      "expect": {
+        "out": {
+          "point": "04004e54b334cb2a1e40cc9712808f78e4adf7e1cd31acb0bc0d969efdfa82de8fbada7ca6c3e22ba5d47b5dc024e93ffd8c2cb3f1f88d3224050914a8ad9dcd593a59010b8759ce9c47342e92da648fd25aeaadd28c3f6cfad8c5fa1beec990ca9e7fbf0939bf66c1b8d9918db4795980329872afcf99e0f774f84b144bfa60e5587d7abd"
+        }
+      }
+    },
+    {
+      "name": "synthetic secp521r1: shared secret x (registry-coverage case, python oracle)",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "secp521r1",
+        "d": "0123456789abcdef",
+        "peer": "0400059ef2063f2d34fdf74766e4b181a73501856d01fbe4c6b5d74da75a28117dd89797ad245097e3d2a34f20ce08c8f7c520ece84784371b42f242c6c637c13f0edb01a9f584cebff0a875c9c100d4b2e3d5af292b8887c5aa04c32966d04491573e88319fca9ba3d4260bf2f14a8a04d204c98a56155e02a1d80772a63746f61f94c55e"
+      },
+      "expect": {
+        "out": {
+          "secret": "008c067f16157389cdf0c69b32655bfb2d81250f1fd630fa39437d09b92275d02075fb1d446e4fa994ac23bcbac3c07ba7bc78743a613735820eb22ae7b750488c4d"
+        }
+      }
+    },
+    {
+      "name": "synthetic brainpoolp192r1: QA = dA*G (registry-coverage case, python oracle)",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp192r1",
+        "d": "0123456789abcdef"
+      },
+      "expect": {
+        "out": {
+          "point": "044bd5678fe33031ef1ab2603adceb84d514ea5e4b304bc0389146ea1d929e85c856be7f666e526b3cec4368746b5ffc23"
+        }
+      }
+    },
+    {
+      "name": "synthetic brainpoolp192r1: shared secret x (registry-coverage case, python oracle)",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "brainpoolp192r1",
+        "d": "0123456789abcdef",
+        "peer": "04586ed51632aa9c5802bda7878906ada56e7c0fc906ffdd8d7d1364a6af9a53cecc26d60870a6bda49c6ca9be19bccbe4"
+      },
+      "expect": {
+        "out": {
+          "secret": "44c875714f218d90223405cc33fd0e5afd4a8399a618db8c"
+        }
+      }
+    },
+    {
+      "name": "synthetic brainpoolp224r1: QA = dA*G (registry-coverage case, python oracle)",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp224r1",
+        "d": "0123456789abcdef"
+      },
+      "expect": {
+        "out": {
+          "point": "049cd63ec377b2f60bf2bc76d9b83fd4cc1fbf4631af0556391bdbcce329888d2a6cc1d5ee43b804ef73ede58e43657016ef4bebf1efdb17f0"
+        }
+      }
+    },
+    {
+      "name": "synthetic brainpoolp224r1: shared secret x (registry-coverage case, python oracle)",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "brainpoolp224r1",
+        "d": "0123456789abcdef",
+        "peer": "04c73a8670020fd417fba4ca641f3d0ef3ea8cec929a7d2ecd4e44d7ec73086f132f713624cb5500153331371161359b4067db9a967665da6a"
+      },
+      "expect": {
+        "out": {
+          "secret": "5d564862264ecfd2d2147541e340dd44477698a7b65dfc0e4a1bf6c5"
+        }
+      }
+    },
+    {
+      "name": "synthetic brainpoolp320r1: QA = dA*G (registry-coverage case, python oracle)",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp320r1",
+        "d": "0123456789abcdef"
+      },
+      "expect": {
+        "out": {
+          "point": "049fed838773482aa295e67082718ec7f60ad876833058180e3306fa03049c6dbad7d867375957fb603c73924b27f27d42d59e6269f25759021d1563778ced15cd0295e90cbf29ae485c060279ac976536"
+        }
+      }
+    },
+    {
+      "name": "synthetic brainpoolp320r1: shared secret x (registry-coverage case, python oracle)",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "brainpoolp320r1",
+        "d": "0123456789abcdef",
+        "peer": "041ec7b951b0da0ac6dbec3ba30b138229aefa03d6f3f8da774dd7c4140cae26aa8aec3d4683531410a6d069da366b6de692a6c9899cc0d6780634f02676aebbf0c070424259963bc9f7b2e426e8be2cfb"
+      },
+      "expect": {
+        "out": {
+          "secret": "2da4e2342cad5992f33241d5e754f767acd83bbc5a9e78c22e9fa35d8ab70859e321f1f57f847c2c"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.1: terminal mapping pubkey = d*G (brainpoolp256r1)",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "d": "7f4ef07b9ea82fd78ad689b38d0bc78cf21f249d953bc46f4c6e19259c010f99"
+      },
+      "expect": {
+        "out": {
+          "point": "047acf3efc982ec45565a4b155129efbc74650dcbfa6362d896fc70262e0c2cc5e544552dcb6725218799115b55c9baa6d9f6bc3a9618e70c25af71777a9c4922d"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.1: mapping shared point H = d_map * PICC pub (full point, ecPointMul)",
+      "op": "ecPointMul",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "d": "7f4ef07b9ea82fd78ad689b38d0bc78cf21f249d953bc46f4c6e19259c010f99",
+        "point": "04824fba91c9cbe26bef53a0ebe7342a3bf178cea9f45de0b70aa601651fba3f5730d8c879aaa9c9f73991e61b58f4d52eb87a0a0c709a49dc63719363ccd13c54"
+      },
+      "expect": {
+        "out": {
+          "point": "0460332ef2450b5d247ef6d3868397d398852ed6e8caf6ffeef6bf85ca57057fd50840ca7415baf3e43bd414d35aa4608b93a2caf3a4e3ea4e82c9c13d03eb7181"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.1: mapped generator G-hat = s*G + H (ecMulAdd)",
+      "op": "ecMulAdd",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "s": "3f00c4d39d153f2b2a214a078d899b22",
+        "g": "048bd2aeb9cb7e57cb2c4b482ffc81b7afb9de27e1e3bd23c23a4453bd9ace3262547ef835c3dac4fd97f8461a14611dc9c27745132ded8e545c1d54c72f046997",
+        "h": "0460332ef2450b5d247ef6d3868397d398852ed6e8caf6ffeef6bf85ca57057fd50840ca7415baf3e43bd414d35aa4608b93a2caf3a4e3ea4e82c9c13d03eb7181"
+      },
+      "expect": {
+        "out": {
+          "point": "048ced63c91426d4f0eb1435e7cb1d74a46723a0af21c89634f65a9ae87a9265e28c879506743f8611ac33645c5b985c80b5f09a0b83407c1b6a4d857ae76fe522"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.1: terminal ephemeral pubkey = d_eph * G-hat (ecPointMul on mapped generator)",
+      "op": "ecPointMul",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "d": "a73fb703ac1436a18e0cfa5abb3f7bec7a070e7a6788486bee230c4a22762595",
+        "point": "048ced63c91426d4f0eb1435e7cb1d74a46723a0af21c89634f65a9ae87a9265e28c879506743f8611ac33645c5b985c80b5f09a0b83407c1b6a4d857ae76fe522"
+      },
+      "expect": {
+        "out": {
+          "point": "042db7a64c0355044ec9df190514c625cba2cea48754887122f3a5ef0d5edd301c3556f3b3b186df10b857b58f6a7eb80f20ba5dc7be1d43d9bf850149fbb36462"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.1: step-4 shared secret x (EVP_PKEY_derive padded-x parity)",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "d": "a73fb703ac1436a18e0cfa5abb3f7bec7a070e7a6788486bee230c4a22762595",
+        "peer": "049e880f842905b8b3181f7af7caa9f0efb743847f44a306d2d28c1d9ec65df6db7764b22277a2eddc3c265a9f018f9cb852e111b768b326904b59a0193776f094"
+      },
+      "expect": {
+        "out": {
+          "secret": "28768d20701247dae81804c9e780ede582a9996db4a315020b2733197db84925"
+        }
+      }
+    },
+    {
+      "name": "leading-zero x in public key: d=379 on secp256r1; encode stays field-length",
+      "op": "ecPublicFromPrivate",
+      "input": {
+        "curve": "secp256r1",
+        "d": "017b"
+      },
+      "expect": {
+        "out": {
+          "point": "04005543894af3d00ed7d740abdbd75c96b06877b787db5f70eea78b90a8d7c00abb4c85a3d8ea29efaafa24406912dd84d5b14dc32bf656ef6c6bd58a5d943f92"
+        }
+      }
+    },
+    {
+      "name": "leading-zero shared-secret x: d=492, peer=5*G on secp256r1; padded to 32 bytes",
+      "op": "ecdhSharedSecretX",
+      "input": {
+        "curve": "secp256r1",
+        "d": "01ec",
+        "peer": "0451590b7a515140d2d784c85608668fdfef8c82fd1f5be52421554a0dc3d033ede0c17da8904a727d8ae1bf36bf8a79260d012f00d4d80888d1d0bb44fda16da4"
+      },
+      "expect": {
+        "out": {
+          "secret": "00d0b4383727610a0c652f3974ad06b97902137b5f00477c05cd4c61c61a0250"
+        }
+      }
+    },
+    {
+      "name": "ecPointDecode uncompressed round-trip (RFC 7027 QA)",
+      "op": "ecPointDecode",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "0444106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be58ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089bdc"
+      },
+      "expect": {
+        "out": {
+          "point": "0444106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be58ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089bdc"
+        }
+      }
+    },
+    {
+      "name": "ecPointDecode accepts compressed input (oct2point parity)",
+      "op": "ecPointDecode",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "0244106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be5"
+      },
+      "expect": {
+        "out": {
+          "point": "0444106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be58ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089bdc"
+        }
+      }
+    },
+    {
+      "name": "ecPointDecode rejects off-curve point (TR-03111 3.2.1 MUST)",
+      "op": "ecPointDecode",
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "0444106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be58ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089bdd"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPointDecode rejects point-at-infinity encoding 00 (stricter than oct2point)",
+      "op": "ecPointDecode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "00"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPointDecode rejects hybrid 06/07 encoding (stricter than oct2point)",
+      "op": "ecPointDecode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "0644106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be58ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089bdc"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPointDecode rejects wrong-length uncompressed encoding",
+      "op": "ecPointDecode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "0444106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be58ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089b"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPointDecode rejects x-coordinate >= p (out of field range)",
+      "op": "ecPointDecode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "04a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e53778ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089bdc"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPointDecode rejects compressed x with no curve point",
+      "op": "ecPointDecode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "020000000000000000000000000000000000000000000000000000000000000004"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPointDecode rejects unknown prefix 0x05",
+      "op": "ecPointDecode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": "0544106e913f92bc02a1705d9953a8414db95e1aaa49e81d9e85f929a8e3100be58ab4846f11caccb73ce49cbdd120f5a900a69fd32c272223f789ef10eb089bdc"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPointDecode rejects empty input",
+      "op": "ecPointDecode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "brainpoolp256r1",
+        "encoded": ""
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPublicFromPrivate rejects d = 0",
+      "op": "ecPublicFromPrivate",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "secp256r1",
+        "d": ""
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ecPublicFromPrivate rejects d >= n",
+      "op": "ecPublicFromPrivate",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "curve": "secp256r1",
+        "d": "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "bigIntToBytes minimal form strips leading zeros (BN_bn2bin parity)",
+      "op": "bigIntToBytes",
+      "input": {
+        "value": "00ab12"
+      },
+      "expect": {
+        "out": {
+          "data": "ab12"
+        }
+      }
+    },
+    {
+      "name": "bigIntToBytes zero -> empty (BN_bn2bin parity)",
+      "op": "bigIntToBytes",
+      "input": {
+        "value": ""
+      },
+      "expect": {
+        "out": {
+          "data": ""
+        }
+      }
+    },
+    {
+      "name": "bigIntToBytes explicit length pads (FE2OS parity)",
+      "op": "bigIntToBytes",
+      "input": {
+        "value": "ab12",
+        "length": 8
+      },
+      "expect": {
+        "out": {
+          "data": "000000000000ab12"
+        }
+      }
+    },
+    {
+      "name": "bigIntToBytes zero with length pads to zeros",
+      "op": "bigIntToBytes",
+      "input": {
+        "value": "",
+        "length": 4
+      },
+      "expect": {
+        "out": {
+          "data": "00000000"
+        }
+      }
+    },
+    {
+      "name": "bigIntToBytes value too large for length throws",
+      "op": "bigIntToBytes",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "value": "ab1234",
+        "length": 2
+      },
+      "expect": {
+        "error": "ArgumentError"
+      }
+    },
+    {
+      "name": "bytesToBigInt leading zeros are value-neutral",
+      "op": "bytesToBigInt",
+      "input": {
+        "data": "0000ab12"
+      },
+      "expect": {
+        "out": {
+          "value": "ab12"
+        }
+      }
+    },
+    {
+      "name": "bytesToBigInt empty -> 0",
+      "op": "bytesToBigInt",
+      "input": {
+        "data": ""
+      },
+      "expect": {
+        "out": {
+          "value": ""
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.2 / RFC 5114 2.1: terminal mapping pubkey = g^x mod p",
+      "op": "dhPublic",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "g": "a4d1cbd5c3fd34126765a442efb99905f8104dd258ac507fd6406cff14266d31266fea1e5c41564b777e690f5504f213160217b4b01b886a5e91547f9e2749f4d7fbd7d3b9a92ee1909d0d2263f80a76a6a24c087a091f531dbf0a0169b6a28ad662a4d18e73afa32d779d5918d08bc8858f4dcef97c2a24855e6eeb22b3b2e5",
+        "x": "5265030f751f4ad18b08ac565fc7ac952e41618d"
+      },
+      "expect": {
+        "out": {
+          "y": "23fb3749ea030d2a25b278d2a562047ade3f01b74f17a15402cb7352ca7d2b3eb71c343db13d1debce9a3666dbcfc920b49174a602cb47965caa73dc702489a44d41db914de9613dc5e98c94160551c0df86274b9359bc0490d01b03ad54022dcb4f57fad6322497d7a1e28d46710f461afe710fbbbc5f8ba166f4311975ec6c"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.2: mapping shared secret h = PICC^x mod p",
+      "op": "dhSharedSecret",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "x": "5265030f751f4ad18b08ac565fc7ac952e41618d",
+        "peerPublic": "78879f57225aa8080d52ed0fc890a4b25336f699aa89a2d3a189654af70729e623ea5738b26381e4da19e004706face7b235c2dbf2f38748312f3c98c2dd4882a41947b324aa1259ac22579db93f7085655af30889dbb845d9e6783fe42c9f2449400306254c8ae8ee9dd812a804c0b66e8cafc14f84d8258950a91b44126ee6"
+      },
+      "expect": {
+        "out": {
+          "secret": "5babebef5b74e5ba94b5c063fda15f1f1cde94873ee0a5d3a2fcab49f258d07f544f13cb66658c3afee9e727389be3f6cbbbd32128a8c21dd6eea3cf7091cddfb08b8d007d40318dcca4ffbf51208790fb4bd111e5a968ed6b6f08b26ca87c410b3ce0c310ce104eabd16629aa48620c1279270cb0750c0d37c57fffe302ae7f"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.2: terminal ephemeral pubkey = g-hat^x mod p (mapped generator as g)",
+      "op": "dhPublic",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "g": "7c9cbfe98f9fbdda8d143506fa7d9306f4cb17e3c71707aff5e1c1a12370249684d64ee37af44b8dbd9d45bf6023919cbaa027ab97acc771666c8e98ff483301bfa4872dede9034edfacb70814166b7f360676829b826bea57291b5ad69fbc84ef1e779032a305803f74341793e869742d401325b37ee8565ffcdee618342dc5",
+        "x": "89ccd99b0e8d3b1f11e1296dca68ec53411cf2ca"
+      },
+      "expect": {
+        "out": {
+          "y": "907d89e2d425a178aa81af4a7774ec8e388c115cae67031e85eece520bd911551b9ae4d04369f29a02626c86fbc6747cc7bc352645b6161a2a42d44eda80a08fa8d61b76d3a154ad8a5a51786b0bc07147057871a922212c5f67f43173172236b7747d1671e6d692a3c7d40a0c3c5ce397545d015c175eb5130551edbc2ee5d4"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App G.2: step-4 shared secret = PICC_eph^x mod p",
+      "op": "dhSharedSecret",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "x": "89ccd99b0e8d3b1f11e1296dca68ec53411cf2ca",
+        "peerPublic": "075693d9ae941877573e634b6e644f8e60af17a0076b8b123d9201074d36152bd8b3a213f53820c42adc79ab5d0aeec3aefb91394da476bd97b9b14d0a65c1fc71a0e019cb08af55e1f729005fba7e3fa5dc41899238a250767a6d46db974064386cd456743585f8e5d90cc8b4004b1f6d866c79ce0584e49687ff61bc29aea1"
+      },
+      "expect": {
+        "out": {
+          "secret": "6babc7b3a72bcd7ea385e4c62db2625bd8613b24149e146a629311c4ca6698e38b834b6a9e9cd7184ba8834aff5043d436950c4c1e7832367c10cb8c314d40e5990b0df7013e64b4549e2270923d06f08cff6bd3e977dde6abe4c31d55c0fa2e465e553e77bdf75e3193d3834fc26e8eb1ee2fa1e4fc97c18c3f6cfffe2607fd"
+        }
+      }
+    },
+    {
+      "name": "leading-zero DH public key: g^48 mod p has a leading zero byte; minimal output is 127 bytes (BN_bn2bin strip)",
+      "op": "dhPublic",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "g": "a4d1cbd5c3fd34126765a442efb99905f8104dd258ac507fd6406cff14266d31266fea1e5c41564b777e690f5504f213160217b4b01b886a5e91547f9e2749f4d7fbd7d3b9a92ee1909d0d2263f80a76a6a24c087a091f531dbf0a0169b6a28ad662a4d18e73afa32d779d5918d08bc8858f4dcef97c2a24855e6eeb22b3b2e5",
+        "x": "30"
+      },
+      "expect": {
+        "out": {
+          "y": "2a89f6af2e9f74bdf4fd2dbc17af03ec1794aada13cbb947bccd8dbd1ae59fe461543b7deed7b1cdbe7d3d57b8a11c18b91740ba6f10cb3cfddf135621201db72893f901c8a72c74c2a2ef8e5111b3e3cfb882ec867d6e348e0a111c333ff0e6907c47bf0ed846b3067dc7f30d594204f81b41bbba33a49e2c931c7220b604"
+        }
+      }
+    },
+    {
+      "name": "leading-zero DH shared secret: peer=g, same exponent (minimal-form strip)",
+      "op": "dhSharedSecret",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "x": "30",
+        "peerPublic": "a4d1cbd5c3fd34126765a442efb99905f8104dd258ac507fd6406cff14266d31266fea1e5c41564b777e690f5504f213160217b4b01b886a5e91547f9e2749f4d7fbd7d3b9a92ee1909d0d2263f80a76a6a24c087a091f531dbf0a0169b6a28ad662a4d18e73afa32d779d5918d08bc8858f4dcef97c2a24855e6eeb22b3b2e5"
+      },
+      "expect": {
+        "out": {
+          "secret": "2a89f6af2e9f74bdf4fd2dbc17af03ec1794aada13cbb947bccd8dbd1ae59fe461543b7deed7b1cdbe7d3d57b8a11c18b91740ba6f10cb3cfddf135621201db72893f901c8a72c74c2a2ef8e5111b3e3cfb882ec867d6e348e0a111c333ff0e6907c47bf0ed846b3067dc7f30d594204f81b41bbba33a49e2c931c7220b604"
+        }
+      }
+    },
+    {
+      "name": "App G.2 step-3 terminal ephemeral public key over the mapped generator",
+      "op": "dhPublic",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "g": "7c9cbfe98f9fbdda8d143506fa7d9306f4cb17e3c71707aff5e1c1a12370249684d64ee37af44b8dbd9d45bf6023919cbaa027ab97acc771666c8e98ff483301bfa4872dede9034edfacb70814166b7f360676829b826bea57291b5ad69fbc84ef1e779032a305803f74341793e869742d401325b37ee8565ffcdee618342dc5",
+        "x": "89ccd99b0e8d3b1f11e1296dca68ec53411cf2ca"
+      },
+      "expect": {
+        "out": {
+          "y": "907d89e2d425a178aa81af4a7774ec8e388c115cae67031e85eece520bd911551b9ae4d04369f29a02626c86fbc6747cc7bc352645b6161a2a42d44eda80a08fa8d61b76d3a154ad8a5a51786b0bc07147057871a922212c5f67f43173172236b7747d1671e6d692a3c7d40a0c3c5ce397545d015c175eb5130551edbc2ee5d4"
+        }
+      }
+    },
+    {
+      "name": "App G.2 step-3 chip ephemeral public key over the mapped generator",
+      "op": "dhPublic",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "g": "7c9cbfe98f9fbdda8d143506fa7d9306f4cb17e3c71707aff5e1c1a12370249684d64ee37af44b8dbd9d45bf6023919cbaa027ab97acc771666c8e98ff483301bfa4872dede9034edfacb70814166b7f360676829b826bea57291b5ad69fbc84ef1e779032a305803f74341793e869742d401325b37ee8565ffcdee618342dc5",
+        "x": "a5b780126b7c980e9fcea1d4539da1d27c342dfa"
+      },
+      "expect": {
+        "out": {
+          "y": "075693d9ae941877573e634b6e644f8e60af17a0076b8b123d9201074d36152bd8b3a213f53820c42adc79ab5d0aeec3aefb91394da476bd97b9b14d0a65c1fc71a0e019cb08af55e1f729005fba7e3fa5dc41899238a250767a6d46db974064386cd456743585f8e5d90cc8b4004b1f6d866c79ce0584e49687ff61bc29aea1"
+        }
+      }
+    },
+    {
+      "name": "App G.2 step-4 shared secret (terminal side)",
+      "op": "dhSharedSecret",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "x": "89ccd99b0e8d3b1f11e1296dca68ec53411cf2ca",
+        "peerPublic": "075693d9ae941877573e634b6e644f8e60af17a0076b8b123d9201074d36152bd8b3a213f53820c42adc79ab5d0aeec3aefb91394da476bd97b9b14d0a65c1fc71a0e019cb08af55e1f729005fba7e3fa5dc41899238a250767a6d46db974064386cd456743585f8e5d90cc8b4004b1f6d866c79ce0584e49687ff61bc29aea1"
+      },
+      "expect": {
+        "out": {
+          "secret": "6babc7b3a72bcd7ea385e4c62db2625bd8613b24149e146a629311c4ca6698e38b834b6a9e9cd7184ba8834aff5043d436950c4c1e7832367c10cb8c314d40e5990b0df7013e64b4549e2270923d06f08cff6bd3e977dde6abe4c31d55c0fa2e465e553e77bdf75e3193d3834fc26e8eb1ee2fa1e4fc97c18c3f6cfffe2607fd"
+        }
+      }
+    },
+    {
+      "name": "App G.2 step-4 shared secret (chip side: same value)",
+      "op": "dhSharedSecret",
+      "input": {
+        "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+        "x": "a5b780126b7c980e9fcea1d4539da1d27c342dfa",
+        "peerPublic": "907d89e2d425a178aa81af4a7774ec8e388c115cae67031e85eece520bd911551b9ae4d04369f29a02626c86fbc6747cc7bc352645b6161a2a42d44eda80a08fa8d61b76d3a154ad8a5a51786b0bc07147057871a922212c5f67f43173172236b7747d1671e6d692a3c7d40a0c3c5ce397545d015c175eb5130551edbc2ee5d4"
+      },
+      "expect": {
+        "out": {
+          "secret": "6babc7b3a72bcd7ea385e4c62db2625bd8613b24149e146a629311c4ca6698e38b834b6a9e9cd7184ba8834aff5043d436950c4c1e7832367c10cb8c314d40e5990b0df7013e64b4549e2270923d06f08cff6bd3e977dde6abe4c31d55c0fa2e465e553e77bdf75e3193d3834fc26e8eb1ee2fa1e4fc97c18c3f6cfffe2607fd"
+        }
+      }
+    },
+    {
+      "name": "python-oracle dhPublic on RFC 5114 group 1",
+      "op": "dhPublic",
+      "input": {
+        "p": "ad107e1e9123a9d0d660faa79559c51fa20d64e5683b9fd1b54b1597b61d0a75e6fa141df95a56dbaf9a3c407ba1df15eb3d688a309c180e1de6b85a1274a0a66d3f8152ad6ac2129037c9edefda4df8d91e8fef55b7394b7ad5b7d0b6c12207c9f98d11ed34dbf6c6ba0b2c8bbc27be6a00e0a0b9c49708b3bf8a317091883681286130bc8985db1602e714415d9330278273c7de31efdc7310f7121fd5a07415987d9adc0a486dcdf93acc44328387315d75e198c641a480cd86a1b9e587e8be60e69cc928b2b9c52172e413042e9b23f10b0e16e79763c9b53dcf4ba80a29e3fb73c16b8e75b97ef363e2ffa31f71cf9de5384e71b81c0ac4dffe0c10e64f",
+        "g": "ac4032ef4f2d9ae39df30b5c8ffdac506cdebe7b89998caf74866a08cfe4ffe3a6824a4e10b9a6f0dd921f01a70c4afaab739d7700c29f52c57db17c620a8652be5e9001a8d66ad7c17669101999024af4d027275ac1348bb8a762d0521bc98ae247150422ea1ed409939d54da7460cdb5f6c6b250717cbef180eb34118e98d119529a45d6f834566e3025e316a330efbb77a86f0c1ab15b051ae3d428c8f8acb70a8137150b8eeb10e183edd19963ddd9e263e4770589ef6aa21e7f5f2ff381b539cce3409d13cd566afbb48d6c019181e1bcfe94b30269edfe72fe9b6aa4bd7b5a0f1c71cfff4c19c418e1f6ec017981bc087f2a7065b384b890d3191f2bfa",
+        "x": "15bb92852c1665df6f7333f62b481ad393a32f83a651ddb1eaf7984b"
+      },
+      "expect": {
+        "out": {
+          "y": "a5ff1eeeaedc7dca0948253e194e4f78a70b783ae48d65185b5140b5475abc4bc6706c889febc4c6a1d3df5f6b88b97f3cec37e9013b8127d6449f047e41c77865aee38931936d5fe7fdf20a51056d1467f245e6400b027513eb817fc789469ec6bdc33fec27d69c28fed1aae663c26c9b67ca154218cfe26e392eb7d756006d49e5ad9bb56fd292cf4b5d31f2318ccfccd93e191606fae02f53d2cbd29a9034b3190f12646bf7e6d848e8fa3a092e70c7705c449c0fc4d1fc32e8c6044f27041d5326280b055ada3f959e55ff5d4313e4d26eb701b004c172f2f7d28cfb59d52d097a0742bfc0f74332c7a64f3676fc06630fbdcfaa1e62ab0dda8e478d6b28"
+        }
+      }
+    },
+    {
+      "name": "python-oracle dhSharedSecret on RFC 5114 group 1",
+      "op": "dhSharedSecret",
+      "input": {
+        "p": "ad107e1e9123a9d0d660faa79559c51fa20d64e5683b9fd1b54b1597b61d0a75e6fa141df95a56dbaf9a3c407ba1df15eb3d688a309c180e1de6b85a1274a0a66d3f8152ad6ac2129037c9edefda4df8d91e8fef55b7394b7ad5b7d0b6c12207c9f98d11ed34dbf6c6ba0b2c8bbc27be6a00e0a0b9c49708b3bf8a317091883681286130bc8985db1602e714415d9330278273c7de31efdc7310f7121fd5a07415987d9adc0a486dcdf93acc44328387315d75e198c641a480cd86a1b9e587e8be60e69cc928b2b9c52172e413042e9b23f10b0e16e79763c9b53dcf4ba80a29e3fb73c16b8e75b97ef363e2ffa31f71cf9de5384e71b81c0ac4dffe0c10e64f",
+        "x": "15bb92852c1665df6f7333f62b481ad393a32f83a651ddb1eaf7984b",
+        "peerPublic": "513b988bcc25451cd32a569ea26f7f247114c4252b1f4dd7e8d77f1114b01e226621ebc59cf0621c5c59d8086b171c2e28e53ac42a862304efc20f42f862a27930f05730dbab63a70738a9ea1bc8965c82a0685c3db4ca19e031a31091d289833d93db3e393cf845d13f6d5ec4a5c6de6f98a1895d8c24e93e4285bd8ecfe463f8c169829f77f5d2210ca92b54caaf8aaef40defcffbff66fe4b3312baa11e507e2fb23d6c6aacb1ecdc725df91ea0e6c981890bac6c154c3c93371ab79859a2aef70a38237a3d93e55c6f23b0c3968aa3b745b23e5c0ab97fa455bd2915cab8e01a93379ddd29bbd56d0986c276b16d46d7613820b3db595fba70958b96a0d7"
+      },
+      "expect": {
+        "out": {
+          "secret": "8611113c80da9cf4d4d35ed46a0b38b609cf460d9aa84141152cc4e93e9daf40d058799a28b01271cbfe87b1a5ef7fa3e874579bfd7796635d9edf2bf4c100dbe2c38accd38e1659a5d27d2733c76e08bc4be8d67fffbdb4372bb2e3a20b731692cbf4098c56cb5574ddfa9d5de5bedb6148fe604eada6fbb3c85dda60be6fd66f8cd4c8b32ca931c70ba8e3525768abd6d55d908e618d443b39ff5ba5cc4c67e6347278c23c106a9ac714b5cd8259433a73a3f64e7411b88f7ba98e466baf7a421244974a87ad67f9587730c7e7ec1b9cec29a92dabab64a67689cd5f6ebbfda381c7944962b65b9b1767a2789711ce825dc3d6418ae6074cd3b9426c8b66fe"
+        }
+      }
+    },
+    {
+      "name": "python-oracle dhPublic on RFC 5114 group 2",
+      "op": "dhPublic",
+      "input": {
+        "p": "87a8e61db4b6663cffbbd19c651959998ceef608660dd0f25d2ceed4435e3b00e00df8f1d61957d4faf7df4561b2aa3016c3d91134096faa3bf4296d830e9a7c209e0c6497517abd5a8a9d306bcf67ed91f9e6725b4758c022e0b1ef4275bf7b6c5bfc11d45f9088b941f54eb1e59bb8bc39a0bf12307f5c4fdb70c581b23f76b63acae1caa6b7902d52526735488a0ef13c6d9a51bfa4ab3ad8347796524d8ef6a167b5a41825d967e144e5140564251ccacb83e6b486f6b3ca3f7971506026c0b857f689962856ded4010abd0be621c3a3960a54e710c375f26375d7014103a4b54330c198af126116d2276e11715f693877fad7ef09cadb094ae91e1a1597",
+        "g": "3fb32c9b73134d0b2e77506660edbd484ca7b18f21ef205407f4793a1a0ba12510dbc15077be463fff4fed4aac0bb555be3a6c1b0c6b47b1bc3773bf7e8c6f62901228f8c28cbb18a55ae31341000a650196f931c77a57f2ddf463e5e9ec144b777de62aaab8a8628ac376d282d6ed3864e67982428ebc831d14348f6f2f9193b5045af2767164e1dfc967c1fb3f2e55a4bd1bffe83b9c80d052b985d182ea0adb2a3b7313d3fe14c8484b1e052588b9b7d2bbd2df016199ecd06e1557cd0915b3353bbb64e0ec377fd028370df92b52c7891428cdc67eb6184b523d1db246c32f63078490f00ef8d647d148d47954515e2327cfef98c582664b4c0f6cc41659",
+        "x": "683b0839543073262b27e238f4a0cd14f00e9bf2c9bced36c43a2dd4e625681b"
+      },
+      "expect": {
+        "out": {
+          "y": "77bfe632d606516d9a541f7e0d4c4eb674a57377fcaf3cd7af1766183cbc8dd43bc861400ff53c0b75e4e7d2c3c44ae24d2d1b442c05002d4ee4ace87c234bedfd648200786acb530d447b0ffe283d570ab080e868ae1882d86f39d60d21e3fbe43250a5533e84e265f1db7dd6dfe3ea00aa3304ed87c60ad62bca91b34e5e10704655497d606a735d1e4e0ea498f332275bc4f07caa5d8b82cf9550f3fcecb1a57855cefe33e1b07e62e2ecfb2ceec9bcf2a07133cf2a8c0734cac82c289341bfaa961658fdfc61757e38d49cc76f638718da362dfd8603b8048325e2c06ae2a4caa64314626bb1f5fcdbbba62d6016b00a885cbbb81d366b1a7c15de4f18a9"
+        }
+      }
+    },
+    {
+      "name": "python-oracle dhSharedSecret on RFC 5114 group 2",
+      "op": "dhSharedSecret",
+      "input": {
+        "p": "87a8e61db4b6663cffbbd19c651959998ceef608660dd0f25d2ceed4435e3b00e00df8f1d61957d4faf7df4561b2aa3016c3d91134096faa3bf4296d830e9a7c209e0c6497517abd5a8a9d306bcf67ed91f9e6725b4758c022e0b1ef4275bf7b6c5bfc11d45f9088b941f54eb1e59bb8bc39a0bf12307f5c4fdb70c581b23f76b63acae1caa6b7902d52526735488a0ef13c6d9a51bfa4ab3ad8347796524d8ef6a167b5a41825d967e144e5140564251ccacb83e6b486f6b3ca3f7971506026c0b857f689962856ded4010abd0be621c3a3960a54e710c375f26375d7014103a4b54330c198af126116d2276e11715f693877fad7ef09cadb094ae91e1a1597",
+        "x": "683b0839543073262b27e238f4a0cd14f00e9bf2c9bced36c43a2dd4e625681b",
+        "peerPublic": "1f9ae9cc3b0d2937ed22a179ff03cf4342ae76d3cc4356562fa86e7b2d82d3c91c61a1360c6e0991b65a6448992a502faae845346449843cbfd12d30141097e399fa19ba3c47ea8ed12d32de98a6ebfb26928e07d54f902e1016ac03a145bdc8fe74c5a3a2a473f8ea98f1e503ff1f61001075ec376597d2666fbdaf046c867541d7cbb80f4c0e9ccd5d19843197698eda97c1fc41043188e795555e8de6f706a0917284a4a2afcbe7268892a6371eb78647a92fc57ab612b38834dbc01bf3edd316a1982c5e16601928a73b092c63323d87dfd020153ca3940fa4737d360234e204bf600c59c79fe077f895cbee92317cd11f2db08621b657b995cbaad32544"
+      },
+      "expect": {
+        "out": {
+          "secret": "054e4c69ffa06be132c19453e36cf078b37b1724727f04ca7f30149432f8a41c68c563b83389d6f9c5bdc85107ca10a55c266e39a62c43b74edc7e27ae3b28ed7faa83d0ff3c84885e24e3bc4d2f61759e1d3ad87446c37423173a8bb1d3c8513e5f97fc6e7ea6c132adc0f29a2047b99a35df5efdd26c9b626a7a858a935b5b57c63313c940bfda452fa39652ba746e6dd8d612f35c7a9649f0bb7f2eade3707d613a99108f9b1f037a14ba603ccbef4ea069df363e7d459ac4ce31e1520931b1a9e9d1e559f601c830b05315837090d8872c42184d41521dcd9b6408e00f58c68099a1fbb9bc037cb7826113e54582029b77d868a1a8252d7d671bd076684d"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "transcript": "pace_session_cam_aes128",
+  "schemaVersion": 1,
+  "description": "Full PACE-CAM AES-128 session, ICAO 9303 Part 11 App I.1 (Brainpool P-256). CAM runs the GM flow on the wire (§4.4.3.3.3: the mapping phase is identical to Generic Mapping), and the final GA response carries the real App I.1 DO8A after the DO86 token. The port consumes it: the step-4 tag-scan extracts the DO8A, decrypts it with IV = E(KSenc, -1) and exposes CA_IC on PACEHandler.camData (beyond upstream, whose extraction is commented out, so it ignores the record). Consuming it changes nothing on the wire, which is why this fixture stays both-runner: the Swift replay drives the same bytes to the same session keys and simply does not read the DO8A. GA rounds are byte-for-byte the App I.1 listings; the MSE:Set AT carries DO84 (parameterId 13), which the App I listing omits. Post-PACE SELECT under the installed AES SM (keys 0A9D.../4B1C... from App I.1). That the Dart replay recovers App I.1's published CA_IC 85DC3FA9...53C426B3 from these exact bytes is asserted in test/conformance/pace_can_cam_transcripts_test.dart: the transcript schema has no field for it. runners omitted = both.",
+  "session": {
+    "secureMessaging": "pace",
+    "cardAccess": "31143012060a04007f0007020204060202010202010d",
+    "mrzKey": "C11T002JM496081222310314",
+    "ephemeralKeys": {
+      "mappingKey": "5d8bb87bd74d985a4b7d4325b9f7b976fe835122773400798914aa22738135cc",
+      "ephemeralKey": "76ecfdaa9841c323a3f5fc5e88b88db3eff7e35ebf57a7e6946cb630006c2120"
+    }
+  },
+  "drive": {
+    "op": "selectPassportApplication"
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "22",
+        "p1": "c1",
+        "p2": "a4",
+        "data": "800a04007f0007020204060283010184010d",
+        "le": -1
+      },
+      "wire": "0022c1a412800a04007f0007020204060283010184010d",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      },
+      "cmdFor": {
+        "swift": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f00070202040602830101",
+          "le": -1
+        }
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "wire": "10860000027c0000",
+      "resp": {
+        "data": "7c128010cb60e8e0d85b76a9bd304747c2ad42e2",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c438141047f1d410adb7ddb3b84bf1030800981a9105d7457b4a3ade002384f3086c67ede1ab889104a27db6d842b019020fbf3ceacb0dc627f7bdcac29969e19d0e553c1",
+        "le": 256
+      },
+      "wire": "10860000457c438141047f1d410adb7ddb3b84bf1030800981a9105d7457b4a3ade002384f3086c67ede1ab889104a27db6d842b019020fbf3ceacb0dc627f7bdcac29969e19d0e553c100",
+      "resp": {
+        "data": "7c43824104a234236aa9b9621e8efb73b5245c0e09d2576e5277183c1208bdd55280cae8b304f365713a356e65a451e165ecc9ac0ac46e3771342c8fe5aedd092685338e23",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c43834104446c934084d9dab863944f219520076c29ee3f7ae6722b11ff319ec1c7728f955483400bff60bf0c5929270009277dc2a515e12575010ad9ba916cf1bf86fefc",
+        "le": 256
+      },
+      "wire": "10860000457c43834104446c934084d9dab863944f219520076c29ee3f7ae6722b11ff319ec1c7728f955483400bff60bf0c5929270009277dc2a515e12575010ad9ba916cf1bf86fefc00",
+      "resp": {
+        "data": "7c4384410402ad566f3c6ec7f9324509ad50a51fa52030782a4968fcfedf737daea993333111c3b9b4c2287789bd137e7f8aa882e2a3c633ccd6ecc2c63c57ad401a09c2e1",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c0a8508e86bd06018a1cd3b",
+        "le": 256
+      },
+      "wire": "008600000c7c0a8508e86bd06018a1cd3b00",
+      "resp": {
+        "data": "7c3c86088596cf055c67c1a38a301eea964daae372ac990e3efde6333353bfc89a6704d93da8798cf77f5b7a54bd10cba372b42be0b9b5f28aa8de2f4f92",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "a4",
+        "p1": "04",
+        "p2": "0c",
+        "data": "871101e748e8b574f3eb05233f133667a5e8208e083c953eb1c53f8a55",
+        "le": 256
+      },
+      "wire": "0ca4040c1d871101e748e8b574f3eb05233f133667a5e8208e083c953eb1c53f8a5500",
+      "resp": {
+        "data": "990290008e085e007ca87260a77f",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": {
+      "data": "",
+      "sw": "9000"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+# Read by `dart pub publish` INSTEAD of .gitignore (pub uses one or the
+# other per directory, never both), so the .gitignore rules that keep a
+# working tree out of the tarball are restated here first.
+build/
+coverage/
+upstream/
+swift-runner/.upstream-build/
+swift-runner/session-*
+*.log
+TEST*.xml
+node_modules/
+dist/
+target/
+
+# Maintainer material an integrator never runs: the specification PDFs,
+# the plans, the language-neutral vector suite and its runners,
+# the package's own tests, and CI configuration at the root.
+documents/
+plans/
+conformance/
+test/
+swift-runner/
+/*.yml

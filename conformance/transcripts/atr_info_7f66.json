@@ -1,0 +1,64 @@
+{
+  "transcript": "atr_info_7f66",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "EF.ATR/INFO served. MF select, SELECT 2F01, then a READ BINARY from offset 0 at the default 0xA0 chunk; the chip answers the whole 19-byte file (card service 43, card capabilities 47, the 7F66 extended-length template with 2048-byte command and response buffers) and the short answer ends the read. No header-length walk: the file is a bare DO sequence with no outer TLV, so selectFileAndRead's DG shape does not apply. runners:[\"dart\"]; upstream has no EF.ATR/INFO read and its selectFileAndRead would truncate the file after its first DO.",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "readAtrInfo"
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "00",
+        "p2": "0c",
+        "data": "3f00",
+        "le": null
+      },
+      "wire": "00a4000c023f00",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "2f01",
+        "le": null
+      },
+      "wire": "00a4020c022f01",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 160
+      },
+      "wire": "00b00000a0",
+      "resp": {
+        "data": "4301004703b00301c07f66080202080002020800",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": "4301004703b00301c07f66080202080002020800"
+  }
+}

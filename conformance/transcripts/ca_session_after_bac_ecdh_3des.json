@@ -1,0 +1,85 @@
+{
+  "transcript": "ca_session_after_bac_ecdh_3des",
+  "schemaVersion": 1,
+  "description": "Chip Authentication after BAC, id-CA-ECDH-3DES-CBC-CBC over Brainpool P-256. DG14 carries one ChipAuthenticationInfo (version 1, no keyId) and one id-PK-ECDH ChipAuthenticationPublicKeyInfo (named-curve SPKI). The DESede suite is a single MSE:Set KAT (00 22 41 A6) whose data is DO91(uncompressed ephemeral point); DO84 is absent because DG14 carried no keyId (the keyId-0 asymmetry is vector-pinned instead). Secure messaging then restarts under 3DES with SSC = 8x00, and the final step is the first post-CA protected command (SELECT eMRTD AID): it proves the derived keys, as the post-PACE SELECT does. Chip responses are port-synthesised from the simulated PICC (chip private scalar 2a1cd7b4..., terminal ephemeral 3f8e0d5b...). runners omitted = both.",
+  "session": {
+    "secureMessaging": "bac",
+    "mrzKey": "L898902C<369080619406236",
+    "rng": "a1b2c3d4e5f60718292a3b4c5d6e7f8091a2b3c4d5e6f708"
+  },
+  "drive": {
+    "op": "chipAuthentication",
+    "args": {
+      "dg14": "6e7c317a300f060a04007f000702020302010201013067060904007f000702020102305a301406072a8648ce3d020106092b2403030208010107034200045cc25ad351f76be4bfa9498f9d9ce70a72a612e4f39df830d956ec82cb3ce3536f038dfed769c8875badf25e6cc0b399a178a3a8e91174f99b66981efa14fcc9",
+      "ephemeralKey": "3f8e0d5b6a2c9147d8e0b2c4a6f8091b3d5f7092a4c6e80b1d3f5a7092b4d6e8"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "wire": "0084000008",
+      "resp": {
+        "data": "4608f91988702212",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "82",
+        "p1": "00",
+        "p2": "00",
+        "data": "6051dc6d184f06a01c3671aac87704023ab65b07f0cea47f5ab835a771010054c205a11e17adebbe",
+        "le": 256
+      },
+      "wire": "00820000286051dc6d184f06a01c3671aac87704023ab65b07f0cea47f5ab835a771010054c205a11e17adebbe00",
+      "resp": {
+        "data": "46b9342a41396cd739bdf22ee89db741e57465690c77dc132680943f9405d4fb662a68aab9f2dc53",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "22",
+        "p1": "41",
+        "p2": "a6",
+        "data": "874901ef5fae6e1f347bcfd2e232ad7a8f187de3b71af12af7e6025d8f90e4b5037b9b5f0d881436d86fbc91e52d6829f52af3934e3eb7cd0aeb720cb67f363bfd7050b7380e4b6de8f50c8e088cfd39a508cd8696",
+        "le": 256
+      },
+      "wire": "0c2241a655874901ef5fae6e1f347bcfd2e232ad7a8f187de3b71af12af7e6025d8f90e4b5037b9b5f0d881436d86fbc91e52d6829f52af3934e3eb7cd0aeb720cb67f363bfd7050b7380e4b6de8f50c8e088cfd39a508cd869600",
+      "resp": {
+        "data": "990290008e087dee9e4e631f5d5d",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "a4",
+        "p1": "04",
+        "p2": "0c",
+        "data": "870901862d5b1ed76a3db08e08287b11a7fe7ad97a",
+        "le": 256
+      },
+      "wire": "0ca4040c15870901862d5b1ed76a3db08e08287b11a7fe7ad97a00",
+      "resp": {
+        "data": "990290008e082c6ec45f0db2d70a",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": {
+      "data": "",
+      "sw": "9000"
+    }
+  }
+}

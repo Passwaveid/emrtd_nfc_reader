@@ -1,0 +1,116 @@
+{
+  "suite": "card_access",
+  "schemaVersion": 1,
+  "description": "EF.CardAccess / SecurityInfo / PACEInfo parsing over the TlvRecord walk. SET -> child SEQUENCEs -> (oid, version, parameterId). Pins: the first PACEInfo wins; parameterId only in an exactly-3-child SEQUENCE; a malformed <2-child entry is skipped, not a getChild(1)! crash; unparseable -> InvalidASN1Value; version parsed as the DER INTEGER value, split against upstream's decimal-parse-of-hex. Data built from the ICAO P11 App G.1/G.2/I.1 PACEInfos; foreign-OID skip cases synthetic. The CA and CA-public-key entries parse into securityInfos as well (they emit an oid-only row, like any non-PACEInfo); PACE selection is unchanged, which is exactly what the eID-shaped cases assert.",
+  "runners": ["dart", "swift"],
+  "cases": [
+    {
+      "name": "App G.1 ECDH-GM PACEInfo (paramId 13)",
+      "op": "cardAccess.securityInfos",
+      "input": { "data": "31143012060a04007f0007020204020202010202010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 2, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "App I.1 PACE-CAM PACEInfo (paramId 13)",
+      "op": "cardAccess.securityInfos",
+      "input": { "data": "31143012060a04007f0007020204060202010202010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.6.2", "version": 2, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "App G.2 DH-GM PACEInfo (paramId 0)",
+      "op": "cardAccess.securityInfos",
+      "input": { "data": "31143012060a04007f00070202040102020102020100" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.1.2", "version": 2, "parameterId": 0 } ] } }
+    },
+    {
+      "name": "multi-PACEInfo file with distinct parameterIds (the input shape that needs DO84)",
+      "op": "cardAccess.securityInfos",
+      "input": { "data": "31283012060a04007f0007020204020202010202010d3012060a04007f0007020204060202010202010e" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 2, "parameterId": 13 }, { "oid": "0.4.0.127.0.7.2.2.4.6.2", "version": 2, "parameterId": 14 } ] } }
+    },
+    {
+      "name": "first PACEInfo in file order wins",
+      "op": "cardAccess.paceInfo",
+      "input": { "data": "31283012060a04007f0007020204020202010202010d3012060a04007f0007020204060202010202010e" },
+      "expect": { "out": { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 2, "parameterId": 13 } }
+    },
+    {
+      "name": "parameterId recognized only in an exactly-3-child SEQUENCE (4-child -> null)",
+      "op": "cardAccess.securityInfos",
+      "input": { "data": "31173015060a04007f0007020204020202010202010d020100" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 2, "parameterId": null } ] } }
+    },
+    {
+      "name": "unknown-OID and CA entries never win paceInfo selection (parity; the CA entry parses)",
+      "op": "cardAccess.paceInfo",
+      "input": { "data": "3137300d06082a864886f70d01010201003012060a04007f0007020203020202010102010d3012060a04007f0007020204020202010202010d" },
+      "expect": { "out": { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 2, "parameterId": 13 } }
+    },
+    {
+      "name": "the same file's securityInfos carry the ChipAuthenticationInfo (unknown OID skipped)",
+      "op": "cardAccess.securityInfos",
+      "input": { "data": "3137300d06082a864886f70d01010201003012060a04007f0007020203020202010102010d3012060a04007f0007020204020202010202010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.3.2.2" }, { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 2, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "eID-shaped EF.CardAccess; CA info + CA public key + PACEInfo all parse, PACE selection unchanged",
+      "op": "cardAccess.securityInfos",
+      "input": { "data": "3181943012060a04007f0007020203020202010102010d306a060904007f000702020102305a301406072a8648ce3d020106092b24030302080101070342000439d7966fecbc384a7c6cca6aa8163a38e0bde6130a542c47ee43bd66044572bd48bd4ddd275e67184db5fbe3f957674c9d2aef716a5952f02393edba3696ad0402010d3012060a04007f0007020204020202010202010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.3.2.2" }, { "oid": "0.4.0.127.0.7.2.2.1.2" }, { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 2, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "eID-shaped EF.CardAccess selects the PACEInfo (first in file order)",
+      "op": "cardAccess.paceInfo",
+      "input": { "data": "3181943012060a04007f0007020203020202010102010d306a060904007f000702020102305a301406072a8648ce3d020106092b24030302080101070342000439d7966fecbc384a7c6cca6aa8163a38e0bde6130a542c47ee43bd66044572bd48bd4ddd275e67184db5fbe3f957674c9d2aef716a5952f02393edba3696ad0402010d3012060a04007f0007020204020202010202010d" },
+      "expect": { "out": { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 2, "parameterId": 13 } }
+    },
+    {
+      "name": "no PACEInfo present -> paceInfo is null",
+      "op": "cardAccess.paceInfo",
+      "input": { "data": "310f300d06082a864886f70d0101020100" },
+      "expect": { "out": { "present": false } }
+    },
+    {
+      "name": "version 0x0A parses to 10 (dart: DER INTEGER value)",
+      "op": "cardAccess.securityInfos",
+      "runners": ["dart"],
+      "input": { "data": "31143012060a04007f0007020204020202010a02010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 10, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "version 0x0A parses to -1 (swift: Int(\"0A\") fails)",
+      "op": "cardAccess.securityInfos",
+      "runners": ["swift"],
+      "input": { "data": "31143012060a04007f0007020204020202010a02010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": -1, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "version 0x10 parses to 16 (dart: DER INTEGER value)",
+      "op": "cardAccess.securityInfos",
+      "runners": ["dart"],
+      "input": { "data": "31143012060a04007f0007020204020202011002010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 16, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "version 0x10 parses to 10 (swift: Int(\"10\") decimal)",
+      "op": "cardAccess.securityInfos",
+      "runners": ["swift"],
+      "input": { "data": "31143012060a04007f0007020204020202011002010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.2.2", "version": 10, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "malformed <2-child entry skipped (dart; upstream getChild(1)! crashes)",
+      "op": "cardAccess.securityInfos",
+      "runners": ["dart"],
+      "input": { "data": "3122300c060a04007f000702020402023012060a04007f0007020204060202010202010d" },
+      "expect": { "out": { "infos": [ { "oid": "0.4.0.127.0.7.2.2.4.6.2", "version": 2, "parameterId": 13 } ] } }
+    },
+    {
+      "name": "unparseable file -> InvalidASN1Value (dart; swift throws a different code)",
+      "op": "cardAccess.securityInfos",
+      "runners": ["dart"],
+      "input": { "data": "ffffff" },
+      "expect": { "error": "InvalidASN1Value" }
+    }
+  ]
+}

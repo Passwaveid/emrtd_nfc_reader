@@ -1,0 +1,228 @@
+{
+  "suite": "dg7",
+  "schemaVersion": 1,
+  "description": "EF.DG7 parsing: the displayed signature / usual mark. ICAO 9303 P10 \u00a74.7.7 Table 62: `67 { 02 count, 5F43 image x count }`, images per ISO/IEC 10918 (JFIF option) or 15444, no CBEFF wrapper. Upstream reads exactly ONE 5F43 and discards the count without ever validating it, and does no image-format validation at all; both preserved. `dg7.imageFormat` is a dart-only addition (upstream has no format surface on DG7); the Swift side pins the identical bytes through `dg7.parse`'s sha, the dg2 precedent.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "JFIF happy path: one 5F43 image, count 1",
+      "op": "dg7.parse",
+      "input": {
+        "data": "67200201015f431affd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "JFIF happy path -> jpeg (dart-only surface)",
+      "op": "dg7.imageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "67200201015f431affd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg"
+        }
+      }
+    },
+    {
+      "name": "JP2 image carried verbatim",
+      "op": "dg7.parse",
+      "input": {
+        "data": "671e0201015f43180000000c6a5020200d0a870a0000000a6a703263ff4fff51"
+      },
+      "expect": {
+        "out": {
+          "imageSha256": "6cf35715ed857fe9e900b9d6acf9e5fc4c7d6bbe357a6c88a3d94d54bf0ebf44"
+        }
+      }
+    },
+    {
+      "name": "JP2 -> jp2 (dart-only surface)",
+      "op": "dg7.imageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "671e0201015f43180000000c6a5020200d0a870a0000000a6a703263ff4fff51"
+      },
+      "expect": {
+        "out": {
+          "format": "jp2"
+        }
+      }
+    },
+    {
+      "name": "JPEG2000 codestream image carried verbatim",
+      "op": "dg7.parse",
+      "input": {
+        "data": "670f0201015f4309ff4fff51000102ffd9"
+      },
+      "expect": {
+        "out": {
+          "imageSha256": "e466835d1bf1e81c2b4ccf784c64a993c18d83cb45f5d0fb815f3e65cd1aa484"
+        }
+      }
+    },
+    {
+      "name": "codestream -> jpeg2000Codestream (dart-only surface)",
+      "op": "dg7.imageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "670f0201015f4309ff4fff51000102ffd9"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg2000Codestream"
+        }
+      }
+    },
+    {
+      "name": "unrecognized image bytes parse fine (no format validation, unlike DG2)",
+      "op": "dg7.parse",
+      "input": {
+        "data": "670a0201015f4304aabbccdd"
+      },
+      "expect": {
+        "out": {
+          "imageSha256": "8d70d691c822d55638b6e7fd54cd94170c87d19eb1f628b757506ede5688d297"
+        }
+      }
+    },
+    {
+      "name": "unrecognized image bytes -> null format, no throw (dart-only)",
+      "op": "dg7.imageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "670a0201015f4304aabbccdd"
+      },
+      "expect": {
+        "out": {
+          "format": null
+        }
+      }
+    },
+    {
+      "name": "DG2 JFIF-only strictness inherited: an Exif JPEG (FF D8 FF E1) -> null (dart-only)",
+      "op": "dg7.imageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "67120201015f430cffd8ffe1000845786966ffd9"
+      },
+      "expect": {
+        "out": {
+          "format": null
+        }
+      }
+    },
+    {
+      "name": "two 5F43 instances, first wins and the second is left unread",
+      "op": "dg7.parse",
+      "input": {
+        "data": "673b0201025f431affd8ffe000104a46494600010100000100010000aabbccddffd95f43180000000c6a5020200d0a870a0000000a6a703263ff4fff51"
+      },
+      "expect": {
+        "out": {
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "instance count 9 with one image is tolerated (count never validated)",
+      "op": "dg7.parse",
+      "input": {
+        "data": "67200201095f431affd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "zero-length image: imageData empty, sha of empty",
+      "op": "dg7.parse",
+      "input": {
+        "data": "67060201015f4300"
+      },
+      "expect": {
+        "out": {
+          "imageSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "zero-length image -> null format (dart-only)",
+      "op": "dg7.imageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "67060201015f4300"
+      },
+      "expect": {
+        "out": {
+          "format": null
+        }
+      }
+    },
+    {
+      "name": "first tag not 02 -> InvalidResponse",
+      "op": "dg7.parse",
+      "input": {
+        "data": "671d5f431affd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "second tag not 5F43 -> InvalidResponse",
+      "op": "dg7.parse",
+      "input": {
+        "data": "67200201015f2e1affd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "nothing after the 02 count -> TagNotValid (the base has-data guard)",
+      "op": "dg7.parse",
+      "input": {
+        "data": "6703020101"
+      },
+      "expect": {
+        "error": "TagNotValid"
+      }
+    },
+    {
+      "name": "truncated 5F43 value -> InvalidASN1Value (upstream slice-crash)",
+      "op": "dg7.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "67080201015f4310aabb"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    }
+  ]
+}

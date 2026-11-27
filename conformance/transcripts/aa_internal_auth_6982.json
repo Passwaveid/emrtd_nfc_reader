@@ -1,0 +1,67 @@
+{
+  "transcript": "aa_internal_auth_6982",
+  "schemaVersion": 1,
+  "description": "A chip that refuses INTERNAL AUTHENTICATE with 69 82. Pins the shared typed-error surface only: doInternalAuthentication throws ResponseError on both runners. What the *reader* then does with it is the record-and-continue divergence, which is dart-only by nature and pinned in passport_reader_test.dart. runners omitted = both.",
+  "session": {
+    "secureMessaging": "bac",
+    "mrzKey": "L898902C<369080619406236",
+    "rng": "a1b2c3d4e5f60718292a3b4c5d6e7f8091a2b3c4d5e6f708"
+  },
+  "drive": {
+    "op": "activeAuthentication",
+    "args": {
+      "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+      "challenge": "0011223344556677"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "wire": "0084000008",
+      "resp": {
+        "data": "4608f91988702212",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "82",
+        "p1": "00",
+        "p2": "00",
+        "data": "6051dc6d184f06a01c3671aac87704023ab65b07f0cea47f5ab835a771010054c205a11e17adebbe",
+        "le": 256
+      },
+      "wire": "00820000286051dc6d184f06a01c3671aac87704023ab65b07f0cea47f5ab835a771010054c205a11e17adebbe00",
+      "resp": {
+        "data": "46b9342a41396cd739bdf22ee89db741e57465690c77dc132680943f9405d4fb662a68aab9f2dc53",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "88",
+        "p1": "00",
+        "p2": "00",
+        "data": "87110106073a823dbfc2c3c60ae2c53ce36fe59701008e08fec12f6619a383fd",
+        "le": 256
+      },
+      "wire": "0c8800002087110106073a823dbfc2c3c60ae2c53ce36fe59701008e08fec12f6619a383fd00",
+      "resp": {
+        "data": "",
+        "sw": "6982"
+      }
+    }
+  ],
+  "expect": {
+    "error": "ResponseError"
+  }
+}

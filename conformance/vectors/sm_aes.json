@@ -1,0 +1,433 @@
+{
+  "suite": "sm_aes",
+  "schemaVersion": 1,
+  "description": "AES secure messaging frozen reference (P11's only protected-APDU worked example is App D's 3DES, so AES expected values are generated from the port's deterministic protect/decrypt direction and cross-checked against OpenSSL AES-CMAC/AES-CBC; the Swift original re-verifies at session S2). Covers the AES IV derivation, post-PACE SSC init, the response-MAC and DO99-check split cases (upstream accepts what dart rejects), the malformed-RAPDU error set (the typed rejections - one the Ukrainian field shape - and dart-only guards against malformed lengths), the short-response salvage, and SSC lockstep on error SWs. Keys are fixed synthetic AES-128 session keys.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "first wrapped command after PACE - SSC starts at zero, AES IV = E(KSenc, 0^8 || SSC)",
+      "op": "sm.protect",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000000",
+        "cmd": {
+          "cla": "00",
+          "ins": "a4",
+          "p1": "04",
+          "p2": "0c",
+          "data": "a0000002471001",
+          "le": null
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "a4",
+          "p1": "04",
+          "p2": "0c",
+          "data": "871101752f676b09fac86a87d632749a49c7cc8e08c18ba1fce707bd9f",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "AES protect READ BINARY Le=A0: DO97 + 16-byte-block header padding, CMAC truncated to 8",
+      "op": "sm.protect",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000005",
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 160
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "9701a08e087aa7b41953ca432c",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "AES unprotect: DO87 + DO99 + DO8E round-trip (IV recomputed per call)",
+      "op": "sm.unprotect",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "87210106b568ca5447c5a94067356bb65e585a39b2793f072b203453804278ba8ad797990290008e08a1075bfa55324bde",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "60145f0104303130365f36063034303030305c026175",
+          "sw": "9000"
+        }
+      }
+    },
+    {
+      "name": "response MAC split (dart): tampered DO8E MAC -> InvalidResponseChecksum",
+      "op": "sm.unprotect",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "87210106b568ca5447c5a94067356bb65e585a39b2793f072b203453804278ba8ad797990290008e08a1075bfa55324b21",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "error": "InvalidResponseChecksum"
+      }
+    },
+    {
+      "name": "response MAC split (swift): tampered DO8E MAC accepted - CCb reassigned from the received CC, comparison is CC == CC",
+      "op": "sm.unprotect",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "87210106b568ca5447c5a94067356bb65e585a39b2793f072b203453804278ba8ad797990290008e08a1075bfa55324b21",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "60145f0104303130365f36063034303030305c026175",
+          "sw": "9000"
+        }
+      }
+    },
+    {
+      "name": "DO99 check split (dart): right-tag/wrong-length DO99 (99 01) rejected as SM error -> empty data + embedded SW",
+      "op": "sm.unprotect",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "87210106b568ca5447c5a94067356bb65e585a39b2793f072b203453804278ba8ad797990190008e08e2339ed17e1518c2",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "",
+          "sw": "9000"
+        }
+      }
+    },
+    {
+      "name": "DO99 check split (swift): wrong-length DO99 passes the && check and decrypts normally (MAC valid over the malformed DO99, isolating the DO99 check from the MAC check)",
+      "op": "sm.unprotect",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "87210106b568ca5447c5a94067356bb65e585a39b2793f072b203453804278ba8ad797990190008e08e2339ed17e1518c2",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "60145f0104303130365f36063034303030305c026175",
+          "sw": "9000"
+        }
+      }
+    },
+    {
+      "name": "DO87 + DO99 present but DO8E missing -> MissingMandatoryFields (the error code seen in the field)",
+      "op": "sm.unprotect",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "87210106b568ca5447c5a94067356bb65e585a39b2793f072b203453804278ba8ad79799029000",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "error": "MissingMandatoryFields"
+      }
+    },
+    {
+      "name": "DO99-only response missing DO8E -> MissingMandatoryFields (the Ukrainian field shape)",
+      "op": "sm.unprotect",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "99029000",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "error": "MissingMandatoryFields"
+      }
+    },
+    {
+      "name": "DO87 content prefix != 01 -> D087Malformed",
+      "op": "sm.unprotect",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "8709020102030405060708",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "error": "D087Malformed"
+      }
+    },
+    {
+      "name": "malformed RAPDU (dart): DO87 declared length exceeds the response -> InvalidDataPassed (upstream slice-crashes)",
+      "op": "sm.unprotect",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "873001aabbccdd",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "malformed RAPDU (dart): DO87 with indefinite length form 0x80 -> InvalidDataPassed (upstream crashes in asn1Length)",
+      "op": "sm.unprotect",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "8780",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "malformed RAPDU (dart): truncated DO8E MAC -> InvalidDataPassed (upstream slice-crashes)",
+      "op": "sm.unprotect",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "87210106b568ca5447c5a94067356bb65e585a39b2793f072b203453804278ba8ad797990290008e08aabbccdd",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "response too short for DO99 after DO87 -> salvage ResponseAPDU([], 0, 0) preserved",
+      "op": "sm.unprotect",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000006",
+        "rapdu": {
+          "data": "87210106b568ca5447c5a94067356bb65e585a39b2793f072b203453804278ba8ad797",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "",
+          "sw": "0000"
+        }
+      }
+    },
+    {
+      "name": "error SW passes through raw but still advances the SSC - next protect MACs with SSC+2 lockstep",
+      "op": "sm.exchange",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000000",
+        "exchanges": [
+          {
+            "cmd": {
+              "cla": "00",
+              "ins": "b0",
+              "p1": "00",
+              "p2": "00",
+              "data": "",
+              "le": 160
+            },
+            "rapdu": {
+              "data": "",
+              "sw": "6982"
+            }
+          },
+          {
+            "cmd": {
+              "cla": "00",
+              "ins": "b0",
+              "p1": "00",
+              "p2": "00",
+              "data": "",
+              "le": 160
+            },
+            "rapdu": {
+              "data": "871101645c0b1f998a088278d07942bbe94b60990290008e0894a33c6aa2d8ccc8",
+              "sw": "9000"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "exchanges": [
+            {
+              "cmd": {
+                "cla": "0c",
+                "ins": "b0",
+                "p1": "00",
+                "p2": "00",
+                "data": "9701a08e08e7e963196bbe64c0",
+                "le": 256
+              },
+              "rapdu": {
+                "data": "",
+                "sw": "6982"
+              }
+            },
+            {
+              "cmd": {
+                "cla": "0c",
+                "ins": "b0",
+                "p1": "00",
+                "p2": "00",
+                "data": "9701a08e08fc8591102cf4788e",
+                "le": 256
+              },
+              "rapdu": {
+                "data": "60145f01",
+                "sw": "9000"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "extended-length read: READ BINARY Le=1024 with useExtendedMode -> DO97 97 02 04 00, extended wrapper (Lc 00 00 0e, Le 00 00). Dart-only: upstream's odd-width intToBin quirk mangles 0x400 to 40 00",
+      "op": "sm.protect",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000000",
+        "useExtendedMode": true,
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 1024
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "970204008e084bc0e0c43ee29886",
+          "le": 65536
+        }
+      }
+    },
+    {
+      "name": "extended-length read: unprotect a 1024-byte READ BINARY response - three-byte DO87 length (87 82 xx xx) decoded and decrypted",
+      "op": "sm.unprotect",
+      "input": {
+        "algo": "AES",
+        "ksenc": "f5f0e35c0d7161ee6724ee513a0d9a7f",
+        "ksmac": "fe251c7858b356b24514b3bd5f4297d1",
+        "ssc": "0000000000000001",
+        "rapdu": {
+          "data": "8782041101ade1677b6d491962afba48d7c87cc3c5a862421637956c119fe8113b9c69174490323dfeeb8dbeceebd96295c16f1c00138b3f01337581f97c31701ac7fe5ac6488b90c696a9300b1a8032b2ad2abe7727306b6421a8d3837c9005f972b0b493885b87bb608a2a8eb094613ca31bbe679c15f511ee08f3d7c8745974ae07ac6148d8814bffcc9085d4eb32e8154915ea988e1e5db30566b23c5d5b0396f8e4cdef3709898c0b761e7cc16b5cc48e99daec67a775feee5ffb0e94b794794ca08105a63f6135b7d5b3e6b553eb4cb237887c0c599584f30a5a2760cbcbe8efb73320f4c15dcfa5401e3b6971e229424bbd45eec0a1ec88cacad0adba025e53205d3041d6f77452320424f40a0eb31434255df4d5c312417ee65f3dca49c2d33544647cbd0a5e7dff49da749257193c31bf35602871b59b44e91837572fd1701905a94804020d9a95f9db97056aec5a93056fc65ea8200410fd8a0589e16688e8fc2135d0df59155705b9d398beed2074d82972d91d4093c615d98043d6153f40e63d414bbff3c139c432ce26b40188292c1b72cc3b83df4d412055d8e815b5c816c6029c1c668459b9bdf746e3ff03f9cd1c12dd6b4e231fb745f343cfa32c884a39eb916b399b69b910e1d797b3463236fb4c30a18710fb6b42b07447d5a2625492d5d5ee6dbe03e828f8c1f2b3ab7fa518d1283e4dce7728b0cdedf60622ed24096ad08b4018c980d926b38c24a94323ca84b7c0e1939fc80c4a60bcafba41bc630e684dc21610f82952060584070119ceac773d0df058e2683ae387ac0436abc8d429e42f6d063c7549d5d1467035dea0df84a1464e865ba4be769dddeef1b73b082779af77fb7838e215a79ba58766dc1f9a86b33ee0b04ab025e4a17177138a45a3534c31faa02394c0a718e423ac829c1c8f676221640b6121da15d28ae8ceffe275bb0c79df1837018b7e0e60cd6e3d7e498c23a195fe83ecfc5c540632a3feaad63ac9a7add272d9b033c6f736d9399fc4c0ff025899f43378d98cce6ee90579b5ec3cee6b9e59c63578d5a693780c4cea5e1a3f504c5ea3d8b3239f645f5d18252603cb6d17e120c17df36d3a24ffdcca75a1705fc48179ca66779e7b9b7fe72820d371d7e9ef2347b8606051727bd31cacb4e4f4d32592859fe6ac7b5067266502dd9c36355d9984540997b34595c23212b2e31c4afaf624cc5ae9f141915b6697b0228dd536d177aa745cb4eb2dff216075ff69f8ad620824baaaf0f5b409533ebf4597a00ae5b727e2f68eed12eb5a74e8b499d037672ecc887f5caf4ee4719444d072b0f4d2bb94e609720638902f84e22c09a422a3c134069d27b74d338837d5f54e54663a68e3bedafa2a5dce67562ac3c7b872d3cdb7d155b7a9123e6522e5333be7949a0817d6f07606b9c7811606fb85191ea05983512537fb69690e7d8d0011d2eb9c3d03cd6658990290008e08fd884cec18c45215",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+          "sw": "9000"
+        }
+      }
+    }
+  ]
+}

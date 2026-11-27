@@ -1,0 +1,138 @@
+{
+  "suite": "dg15",
+  "schemaVersion": 1,
+  "description": "EF.DG15 parsing: the Active Authentication public key. Upstream hands the body to d2i_EC_PUBKEY and, on failure, to d2i_RSA_PUBKEY, both under try?; the port dispatches the shared SubjectPublicKeyInfo parser on the algorithm OID with the same never-throws contract. A DH SPKI, which that parser does understand, maps to keyType \"none\", the parity value, because neither upstream reader accepts one.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "RSA-1024 SPKI, algorithm parameters NULL",
+      "op": "dg15.parse",
+      "input": {
+        "data": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001"
+      },
+      "expect": {
+        "out": {
+          "keyType": "rsa",
+          "modulus": "912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f",
+          "exponent": "010001"
+        }
+      }
+    },
+    {
+      "name": "RSA-2048 SPKI, algorithm parameters absent (d2i_RSA_PUBKEY accepts both)",
+      "op": "dg15.parse",
+      "input": {
+        "data": "6f82012430820120300b06092a864886f70d0101010382010f003082010a028201010081b50ffc6e3d3a232f3e25a5a5d827426dfee95babe2b4b04d096968047df48b3c177b8d6d681fa31767d02888fad91e4d75252d894380bbf1960d486b2ffbc08314c5b3c2657f54fea1614c94e9d3b87e39932821ed4e3e673570e2e7edffc0d44df5ad4a9cb4917fdf7dad5c9d891bcff10121bbb73207ec666bbef6c8dae4ce5cf2caca50414e8004b659970a8deb37f90873c22358a3dca51d1081b8c869fe0f76337cb8640372eff4c9ec054af609844317583ae07749378a56e0e373dd6f6423043c40067ef6096ceb45881a1095063342cbfed6950851e2f8af5a8f6395bdc7df965a8ef84f459f33777374b424272935f1b9f68cdb2d7fa2c09682670203010001"
+      },
+      "expect": {
+        "out": {
+          "keyType": "rsa",
+          "modulus": "81b50ffc6e3d3a232f3e25a5a5d827426dfee95babe2b4b04d096968047df48b3c177b8d6d681fa31767d02888fad91e4d75252d894380bbf1960d486b2ffbc08314c5b3c2657f54fea1614c94e9d3b87e39932821ed4e3e673570e2e7edffc0d44df5ad4a9cb4917fdf7dad5c9d891bcff10121bbb73207ec666bbef6c8dae4ce5cf2caca50414e8004b659970a8deb37f90873c22358a3dca51d1081b8c869fe0f76337cb8640372eff4c9ec054af609844317583ae07749378a56e0e373dd6f6423043c40067ef6096ceb45881a1095063342cbfed6950851e2f8af5a8f6395bdc7df965a8ef84f459f33777374b424272935f1b9f68cdb2d7fa2c0968267",
+          "exponent": "010001"
+        }
+      }
+    },
+    {
+      "name": "prime256v1 named-curve EC SPKI",
+      "op": "dg15.parse",
+      "input": {
+        "data": "6f5b3059301306072a8648ce3d020106082a8648ce3d030107034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "keyType": "ec",
+          "publicKey": "045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7",
+          "domain": {
+            "p": "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+            "a": "ffffffff00000001000000000000000000000000fffffffffffffffffffffffc",
+            "b": "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+            "g": "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
+            "n": "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+            "h": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "explicit prime-field ECParameters EC SPKI: same key as the named case",
+      "op": "dg15.parse",
+      "input": {
+        "data": "6f82014f3082014b3082010306072a8648ce3d02013081f7020101302c06072a8648ce3d0101022100ffffffff00000001000000000000000000000000ffffffffffffffffffffffff305b0420ffffffff00000001000000000000000000000000fffffffffffffffffffffffc04205ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b031500c49d360886e704936a6678e1139d26b7819f7e900441046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5022100ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551020101034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "keyType": "ec",
+          "publicKey": "045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7",
+          "domain": {
+            "p": "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+            "a": "ffffffff00000001000000000000000000000000fffffffffffffffffffffffc",
+            "b": "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+            "g": "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
+            "n": "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+            "h": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "brainpoolP256r1 named-curve EC SPKI",
+      "op": "dg15.parse",
+      "input": {
+        "data": "6f5c305a301406072a8648ce3d020106092b24030302080101070342000439d7966fecbc384a7c6cca6aa8163a38e0bde6130a542c47ee43bd66044572bd48bd4ddd275e67184db5fbe3f957674c9d2aef716a5952f02393edba3696ad04"
+      },
+      "expect": {
+        "out": {
+          "keyType": "ec",
+          "publicKey": "0439d7966fecbc384a7c6cca6aa8163a38e0bde6130a542c47ee43bd66044572bd48bd4ddd275e67184db5fbe3f957674c9d2aef716a5952f02393edba3696ad04",
+          "domain": {
+            "p": "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5377",
+            "a": "7d5a0975fc2c3057eef67530417affe7fb8055c126dc5c6ce94a4b44f330b5d9",
+            "b": "26dc5c6ce94a4b44f330b5d9bbd77cbf958416295cf7e1ce6bccdc18ff8c07b6",
+            "g": "048bd2aeb9cb7e57cb2c4b482ffc81b7afb9de27e1e3bd23c23a4453bd9ace3262547ef835c3dac4fd97f8461a14611dc9c27745132ded8e545c1d54c72f046997",
+            "n": "a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7",
+            "h": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "X9.42 DH SPKI -> none (upstream's EC-then-RSA readers both fail)",
+      "op": "dg15.parse",
+      "input": {
+        "data": "6f8201bb308201b73082012c06072a8648ce3e02013082011f02818100b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a437102818100a4d1cbd5c3fd34126765a442efb99905f8104dd258ac507fd6406cff14266d31266fea1e5c41564b777e690f5504f213160217b4b01b886a5e91547f9e2749f4d7fbd7d3b9a92ee1909d0d2263f80a76a6a24c087a091f531dbf0a0169b6a28ad662a4d18e73afa32d779d5918d08bc8858f4dcef97c2a24855e6eeb22b3b2e5021500f518aa8781a8df278aba4e7d64b7cb9d494623530381840002818066c8497988a154ea4873f3815f1ba844aaed722495cfbcf06dd303fee2505448a24f52ba1425e11fe73d8f4faf3317c1156c694f93bb1f8f45ab94ffc0be61eb993102abb4cddb5d888e0054137250545a72f9de78e7c6741fdc429ff7c1126b5df3e2b42cf16c4e0c18b9482f16097f82c3f843d043fccf390ea61ef09c3ee9"
+      },
+      "expect": {
+        "out": {
+          "keyType": "none"
+        }
+      }
+    },
+    {
+      "name": "garbage body -> none (the never-throws contract)",
+      "op": "dg15.parse",
+      "input": {
+        "data": "6f03ffffff"
+      },
+      "expect": {
+        "out": {
+          "keyType": "none"
+        }
+      }
+    },
+    {
+      "name": "truncated BIT STRING -> none",
+      "op": "dg15.parse",
+      "input": {
+        "data": "6f193059301306072a8648ce3d020106082a8648ce3d0301070342"
+      },
+      "expect": {
+        "out": {
+          "keyType": "none"
+        }
+      }
+    }
+  ]
+}

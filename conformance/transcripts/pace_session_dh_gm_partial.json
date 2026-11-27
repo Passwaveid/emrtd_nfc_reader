@@ -1,0 +1,70 @@
+{
+  "transcript": "pace_session_dh_gm_partial",
+  "schemaVersion": 1,
+  "runners": [
+    "swift"
+  ],
+  "description": "Partial PACE DH-GM session ending at upstream's step-3 abort; **upstream behavior only**, hence runners:[\"swift\"]. MSE:Set AT + GA1 (nonce) + GA2 (mapping) hit the chip using ICAO 9303 Part 11 App G.2 values; upstream's doStep3KeyExchange then throws PACEError(Step3 KeyEx, Failed to generate EC key) because it treats the mapped DH params as EC, leaving the chip mid-chain. The Dart port completes the same session: see pace_session_dh_gm_aes128.json, which replays these three steps and carries on through steps 3 and 4. MSE:Set AT is upstream's form, without DO84.",
+  "session": {
+    "secureMessaging": "pace",
+    "cardAccess": "31143012060a04007f00070202040102020102020100",
+    "mrzKey": "T22000129364081251010318",
+    "ephemeralKeys": {
+      "mappingKey": "5265030f751f4ad18b08ac565fc7ac952e41618d",
+      "ephemeralKey": "01"
+    }
+  },
+  "drive": {
+    "op": "none"
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "22",
+        "p1": "c1",
+        "p2": "a4",
+        "data": "800a04007f00070202040102830101",
+        "le": -1
+      },
+      "wire": "0022c1a40f800a04007f00070202040102830101",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "wire": "10860000027c0000",
+      "resp": {
+        "data": "7c128010854d8df5827fa6852d1a4fa701cdddca",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c818381818023fb3749ea030d2a25b278d2a562047ade3f01b74f17a15402cb7352ca7d2b3eb71c343db13d1debce9a3666dbcfc920b49174a602cb47965caa73dc702489a44d41db914de9613dc5e98c94160551c0df86274b9359bc0490d01b03ad54022dcb4f57fad6322497d7a1e28d46710f461afe710fbbbc5f8ba166f4311975ec6c",
+        "le": 256
+      },
+      "wire": "10860000867c818381818023fb3749ea030d2a25b278d2a562047ade3f01b74f17a15402cb7352ca7d2b3eb71c343db13d1debce9a3666dbcfc920b49174a602cb47965caa73dc702489a44d41db914de9613dc5e98c94160551c0df86274b9359bc0490d01b03ad54022dcb4f57fad6322497d7a1e28d46710f461afe710fbbbc5f8ba166f4311975ec6c00",
+      "resp": {
+        "data": "7c818382818078879f57225aa8080d52ed0fc890a4b25336f699aa89a2d3a189654af70729e623ea5738b26381e4da19e004706face7b235c2dbf2f38748312f3c98c2dd4882a41947b324aa1259ac22579db93f7085655af30889dbb845d9e6783fe42c9f2449400306254c8ae8ee9dd812a804c0b66e8cafc14f84d8258950a91b44126ee6",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "error": "PACEError"
+  }
+}

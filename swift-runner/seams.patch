@@ -1,0 +1,345 @@
+diff --git a/Package.swift b/Package.swift
+index 5ac6045..5f8aaf4 100644
+--- a/Package.swift
++++ b/Package.swift
+@@ -28,6 +28,20 @@ let package = Package(
+         .testTarget(
+             name: "NFCPassportReaderTests",
+             dependencies: [
++              "NFCPassportReader",
++              .product(name: "OpenSSL", package: "OpenSSL-Package")
++            ]),
++        // test-seams: language-neutral conformance runner driving this
++        // package via @testable import. Vectors live in the superproject
++        // (emrtd_core repo); see its conformance/SCHEMA.md and
++        // swift-runner/README.md. This branch only ever carries test-enabling
++        // changes: test targets, injectable seams, access-level relaxations.
++        .testTarget(
++            name: "ConformanceTests",
++            dependencies: [
++              "NFCPassportReader",
++              // The ec_dh suite's shims call the same OpenSSL
++              // BN/EC_POINT/DH routines PACEHandler uses.
+               .product(name: "OpenSSL", package: "OpenSSL-Package")
+             ]),
+     ]
+diff --git a/Sources/NFCPassportReader/CATestSeams.swift b/Sources/NFCPassportReader/CATestSeams.swift
+new file mode 100644
+index 0000000..6996cdd
+--- /dev/null
++++ b/Sources/NFCPassportReader/CATestSeams.swift
+@@ -0,0 +1,96 @@
++//
++//  CATestSeams.swift
++//  NFCPassportReader
++//
++//  Test-enabling seams for the emrtd_core Dart port's Chip
++//  Authentication conformance. Mirrors PACETestSeams.swift
++//  and Utils.swift's `_emrtdRandomSource`: an injectable
++//  private scalar so deterministic CA transcripts reproduce the exact
++//  ephemeral keypair. Nil on the live path, where `ChipAuthenticationHandler
++//  .doCA` calls EVP_PKEY_keygen unchanged.
++//
++//  This file exists only on the `test-seams` branch (test-enabling
++//  changes only).
++//
++
++import Foundation
++import OpenSSL
++
++/// Injected Chip Authentication *ephemeral* private scalar (raw big-endian
++/// bytes). Set only from the ConformanceTests target.
++///
++/// CA generates exactly one ephemeral keypair per attempted chip key, and the
++/// injected value is reused across the key loop; the port's seam has the
++/// same shape.
++public var _emrtdCaEphemeralPrivateKey: [UInt8]? = nil
++
++/// Builds an ephemeral keypair on `publicKey`'s own domain parameters from a
++/// raw private scalar: the deterministic stand-in for
++/// `EVP_PKEY_keygen(EVP_PKEY_CTX_new(publicKey, nil), ...)`, which is exactly
++/// what `doCA` does on the live path ("This should work for both EC and DH
++/// keys").
++///
++/// Returns nil on any OpenSSL failure, in which case the caller falls back to
++/// real key generation. Caller owns the returned EVP_PKEY.
++func _emrtdCaEphemeralKeyPair(from publicKey: OpaquePointer, scalar: [UInt8])
++    -> OpaquePointer?
++{
++    let keyType = EVP_PKEY_get_base_id(publicKey)
++    if keyType == EVP_PKEY_DH || keyType == EVP_PKEY_DHX {
++        guard let peer = EVP_PKEY_get1_DH(publicKey) else { return nil }
++        defer { DH_free(peer) }
++
++        // Copy p, q, g off the chip key: the ephemeral key must live in the
++        // same group.
++        var p: OpaquePointer?
++        var q: OpaquePointer?
++        var g: OpaquePointer?
++        DH_get0_pqg(peer, &p, &q, &g)
++        guard let p = p, let g = g,
++            let dh = DH_new(),
++            let pCopy = BN_dup(p),
++            let gCopy = BN_dup(g)
++        else { return nil }
++        let qCopy = q.flatMap { BN_dup($0) }
++        // DH_set0_pqg takes ownership of the three BIGNUMs on success.
++        guard DH_set0_pqg(dh, pCopy, qCopy, gCopy) == 1 else {
++            BN_free(pCopy)
++            BN_free(gCopy)
++            if let qCopy = qCopy { BN_free(qCopy) }
++            DH_free(dh)
++            return nil
++        }
++        guard _emrtdSetDHPrivateKey(dh, scalar: scalar) else {
++            DH_free(dh)
++            return nil
++        }
++        let pkey = EVP_PKEY_new()
++        guard EVP_PKEY_set1_DH(pkey, dh) == 1 else {
++            DH_free(dh)
++            EVP_PKEY_free(pkey)
++            return nil
++        }
++        DH_free(dh)
++        return pkey
++    }
++
++    guard let peer = EVP_PKEY_get1_EC_KEY(publicKey) else { return nil }
++    defer { EC_KEY_free(peer) }
++    guard let group = EC_KEY_get0_group(peer),
++        let ec = EC_KEY_new()
++    else { return nil }
++    guard EC_KEY_set_group(ec, group) == 1,
++        _emrtdSetECPrivateKey(ec, scalar: scalar)
++    else {
++        EC_KEY_free(ec)
++        return nil
++    }
++    let pkey = EVP_PKEY_new()
++    guard EVP_PKEY_set1_EC_KEY(pkey, ec) == 1 else {
++        EC_KEY_free(ec)
++        EVP_PKEY_free(pkey)
++        return nil
++    }
++    EC_KEY_free(ec)
++    return pkey
++}
+diff --git a/Sources/NFCPassportReader/ChipAuthenticationHandler.swift b/Sources/NFCPassportReader/ChipAuthenticationHandler.swift
+index ddd0a2c..85d13f1 100644
+--- a/Sources/NFCPassportReader/ChipAuthenticationHandler.swift
++++ b/Sources/NFCPassportReader/ChipAuthenticationHandler.swift
+@@ -113,10 +113,18 @@ class ChipAuthenticationHandler {
+         // Generate Ephemeral Keypair from parameters from DG14 Public key
+         // This should work for both EC and DH keys
+         var ephemeralKeyPair : OpaquePointer? = nil
+-        let pctx = EVP_PKEY_CTX_new(publicKey, nil)
+-        EVP_PKEY_keygen_init(pctx)
+-        EVP_PKEY_keygen(pctx, &ephemeralKeyPair)
+-        EVP_PKEY_CTX_free(pctx)
++        // test-seams: a ConformanceTests-injected scalar
++        // makes CA transcripts deterministic. Nil on the live path, which
++        // falls through to EVP_PKEY_keygen exactly as before.
++        if let scalar = _emrtdCaEphemeralPrivateKey {
++            ephemeralKeyPair = _emrtdCaEphemeralKeyPair(from: publicKey, scalar: scalar)
++        }
++        if ephemeralKeyPair == nil {
++            let pctx = EVP_PKEY_CTX_new(publicKey, nil)
++            EVP_PKEY_keygen_init(pctx)
++            EVP_PKEY_keygen(pctx, &ephemeralKeyPair)
++            EVP_PKEY_CTX_free(pctx)
++        }
+         
+         // Send the public key to the passport
+         try await sendPublicKey(oid: oid, keyId: keyId, pcdPublicKey: ephemeralKeyPair!)
+diff --git a/Sources/NFCPassportReader/DataGroups/PACEInfo.swift b/Sources/NFCPassportReader/DataGroups/PACEInfo.swift
+index 2f466ed..5c70794 100644
+--- a/Sources/NFCPassportReader/DataGroups/PACEInfo.swift
++++ b/Sources/NFCPassportReader/DataGroups/PACEInfo.swift
+@@ -148,8 +148,13 @@ public class PACEInfo : SecurityInfo {
+                     throw NFCPassportReaderError.InvalidDataPassed("Unable to create DH mapping key")
+                 }
+                 defer{ DH_free( dhKey ) }
+-                
+-                DH_generate_key(dhKey)
++
++                // Test seam: inject the mapping private scalar when set.
++                if let injected = _emrtdPaceMappingPrivateKey {
++                    _emrtdSetDHPrivateKey(dhKey!, scalar: injected)
++                } else {
++                    DH_generate_key(dhKey)
++                }
+                 EVP_PKEY_set1_DH(mappingKey, dhKey)
+             
+             case "ECDH":
+@@ -159,8 +164,13 @@ public class PACEInfo : SecurityInfo {
+                     throw NFCPassportReaderError.InvalidDataPassed("Unable to create EC mapping key")
+                  }
+                 defer{ EC_KEY_free( ecKey ) }
+-                
+-                EC_KEY_generate_key(ecKey)
++
++                // Test seam: inject the mapping private scalar when set.
++                if let injected = _emrtdPaceMappingPrivateKey {
++                    _emrtdSetECPrivateKey(ecKey, scalar: injected)
++                } else {
++                    EC_KEY_generate_key(ecKey)
++                }
+                 EVP_PKEY_set1_EC_KEY(mappingKey, ecKey)
+             default:
+                 throw NFCPassportReaderError.InvalidDataPassed("Unsupported agreement algorithm")
+diff --git a/Sources/NFCPassportReader/NFCPassportModel.swift b/Sources/NFCPassportReader/NFCPassportModel.swift
+index 4d50674..0de524e 100644
+--- a/Sources/NFCPassportReader/NFCPassportModel.swift
++++ b/Sources/NFCPassportReader/NFCPassportModel.swift
+@@ -425,7 +425,10 @@ public class NFCPassportModel {
+ 
+     }
+ 
+-    private func ensureReadDataNotBeenTamperedWith( useCMSVerification: Bool ) throws  {
++    // test-seams: `private` -> `internal` so the emrtd_core ConformanceTests
++    // target can drive the hash-oracle slice (even
++    // @testable stops at internal). Test-enabling change only.
++    func ensureReadDataNotBeenTamperedWith( useCMSVerification: Bool ) throws  {
+         guard let sod = getDataGroup(.SOD) as? SOD else {
+             throw PassiveAuthenticationError.SODMissing("No SOD found" )
+         }
+@@ -484,7 +487,9 @@ public class NFCPassportModel {
+     /// Parses an text ASN1 structure, and extracts the Hash Algorythm and Hashes contained from the Octect strings
+     /// - Parameter content: the text ASN1 stucure format
+     /// - Returns: The Hash Algorythm used - either SHA1 or SHA256, and a dictionary of hashes for the datagroups (currently only DG1 and DG2 are handled)
+-    private func parseSODSignatureContent( _ content : String ) throws -> (String, [DataGroupId : String]){
++    // test-seams: `private` -> `internal` for the LDS conformance ops.
++    // Test-enabling change only.
++    func parseSODSignatureContent( _ content : String ) throws -> (String, [DataGroupId : String]){
+         var currentDG = ""
+         var sodHashAlgo = ""
+         var sodHashes :  [DataGroupId : String] = [:]
+diff --git a/Sources/NFCPassportReader/PACEHandler.swift b/Sources/NFCPassportReader/PACEHandler.swift
+index 3c52d08..0fb62bd 100644
+--- a/Sources/NFCPassportReader/PACEHandler.swift
++++ b/Sources/NFCPassportReader/PACEHandler.swift
+@@ -262,10 +262,19 @@ public class PACEHandler {
+         guard
+             let ecParams = EVP_PKEY_get0_EC_KEY(ephemeralParams),
+             let group = EC_KEY_get0_group(ecParams),
+-            EC_KEY_set_group(ephEcKey, group) == 1,
+-            EC_KEY_generate_key(ephEcKey) == 1 else {
++            EC_KEY_set_group(ephEcKey, group) == 1 else {
+             throw NFCPassportReaderError.PACEError( "Step3 KeyEx", "Failed to generate EC key" )
+         }
++        // Test seam: inject the ephemeral private scalar when set.
++        if let injected = _emrtdPaceEphemeralPrivateKey {
++            guard _emrtdSetECPrivateKey(ephEcKey, scalar: injected) else {
++                throw NFCPassportReaderError.PACEError( "Step3 KeyEx", "Failed to generate EC key" )
++            }
++        } else {
++            guard EC_KEY_generate_key(ephEcKey) == 1 else {
++                throw NFCPassportReaderError.PACEError( "Step3 KeyEx", "Failed to generate EC key" )
++            }
++        }
+ 
+         // Wrap the EC_KEY into an EVP_PKEY
+         var ephKeyPair = EVP_PKEY_new()
+diff --git a/Sources/NFCPassportReader/PACETestSeams.swift b/Sources/NFCPassportReader/PACETestSeams.swift
+new file mode 100644
+index 0000000..3a4e037
+--- /dev/null
++++ b/Sources/NFCPassportReader/PACETestSeams.swift
+@@ -0,0 +1,71 @@
++//
++//  PACETestSeams.swift
++//  NFCPassportReader
++//
++//  Test-enabling seams for the emrtd_core Dart port's PACE conformance.
++//  Mirrors Utils.swift's `_emrtdRandomSource`: injectable
++//  private scalars so deterministic PACE transcripts reproduce the exact
++//  mapping (step 2) and ephemeral (step 3) keypairs. Nil on the live path,
++//  where PACEInfo.createMappingKey / doStep3KeyExchange call
++//  EC_KEY_generate_key / DH_generate_key unchanged.
++//
++//  This file exists only on the `test-seams` branch (test-enabling
++//  changes only). First compiled/executed at rented-Mac session S3.
++//
++
++import Foundation
++import OpenSSL
++
++/// Injected step-2 *mapping* private scalar (raw big-endian bytes). Set only
++/// from the ConformanceTests target.
++public var _emrtdPaceMappingPrivateKey: [UInt8]? = nil
++
++/// Injected step-3 *ephemeral* private scalar (raw big-endian bytes).
++public var _emrtdPaceEphemeralPrivateKey: [UInt8]? = nil
++
++/// Synthesises an EC keypair from a raw private scalar: sets the private key
++/// and computes the matching public point as d·G. Returns false on any
++/// OpenSSL failure. (The Swift analogue of the Dart handler's
++/// injected `mappingPrivateKey`/`ephemeralPrivateKey`.)
++@discardableResult
++func _emrtdSetECPrivateKey(_ ecKey: OpaquePointer, scalar: [UInt8]) -> Bool {
++    guard let bn = BN_bin2bn(scalar, Int32(scalar.count), nil) else { return false }
++    defer { BN_free(bn) }
++    guard let group = EC_KEY_get0_group(ecKey),
++        let pub = EC_POINT_new(group)
++    else { return false }
++    defer { EC_POINT_free(pub) }
++    let ctx = BN_CTX_new()
++    defer { BN_CTX_free(ctx) }
++    // pub = scalar·G  (reduces mod n internally, matching pointycastle).
++    guard EC_POINT_mul(group, pub, bn, nil, nil, ctx) == 1,
++        EC_KEY_set_private_key(ecKey, bn) == 1,
++        EC_KEY_set_public_key(ecKey, pub) == 1
++    else { return false }
++    return true
++}
++
++/// Synthesises a DH keypair from a raw private scalar: sets the private key
++/// and computes the matching public value as g^x mod p. `DH_set0_key` takes
++/// ownership of both BIGNUMs on success.
++@discardableResult
++func _emrtdSetDHPrivateKey(_ dh: OpaquePointer, scalar: [UInt8]) -> Bool {
++    guard let priv = BN_bin2bn(scalar, Int32(scalar.count), nil) else { return false }
++    var p: OpaquePointer?
++    var q: OpaquePointer?
++    var g: OpaquePointer?
++    DH_get0_pqg(dh, &p, &q, &g)
++    guard let pub = BN_new() else {
++        BN_free(priv)
++        return false
++    }
++    let ctx = BN_CTX_new()
++    defer { BN_CTX_free(ctx) }
++    guard BN_mod_exp(pub, g, priv, p, ctx) == 1 else {
++        BN_free(priv)
++        BN_free(pub)
++        return false
++    }
++    guard DH_set0_key(dh, pub, priv) == 1 else { return false }
++    return true
++}
+diff --git a/Sources/NFCPassportReader/Utils.swift b/Sources/NFCPassportReader/Utils.swift
+index 330c4ce..ac46571 100644
+--- a/Sources/NFCPassportReader/Utils.swift
++++ b/Sources/NFCPassportReader/Utils.swift
+@@ -139,8 +139,19 @@ public func xor(_ kifd : [UInt8], _ response_kicc : [UInt8] ) -> [UInt8] {
+     return kseed
+ }
+ 
++/// Test seam: injectable randomness source so
++/// deterministic BAC transcripts can feed a fixed RND.IFD/K.IFD. Nil on the
++/// live path, where `generateRandomUInt8Array` is byte-identical to the
++/// original arc4random implementation. Only ever set from the
++/// ConformanceTests target; this branch (`test-seams`) is the only place the
++/// hook exists (test-enabling changes only).
++public var _emrtdRandomSource: ((Int) -> [UInt8])? = nil
++
+ public func generateRandomUInt8Array( _ size: Int ) -> [UInt8] {
+-    
++    if let source = _emrtdRandomSource {
++        return source(size)
++    }
++
+     var ret : [UInt8] = []
+     for _ in 0 ..< size {
+         ret.append( UInt8(arc4random_uniform(UInt32(UInt8.max) + 1)) )

@@ -1,0 +1,55 @@
+{
+  "transcript": "pace_session_im_partial",
+  "schemaVersion": 1,
+  "runners": [
+    "swift"
+  ],
+  "description": "Partial PACE Integrated Mapping session ending at upstream's IM stub abort; **upstream behavior only**, hence runners:[\"swift\"]. MSE:Set AT + GA1 (nonce) hit the chip; upstream's doPACEStep2IM then throws PACEError(Step2IM, IM not yet implemented), leaving the chip mid-protocol with no GA termination (upstream terminate-chaining is dead code). The DO80 nonce ciphertext is illustrative: the stub throws before it is used. The Dart port implements IM: see pace_session_im_ecdh_aes128.json / pace_session_im_dh_aes128.json. MSE:Set AT is upstream's form, without DO84.",
+  "session": {
+    "secureMessaging": "pace",
+    "cardAccess": "31143012060a04007f0007020204040202010202010d",
+    "mrzKey": "T22000129364081251010318",
+    "ephemeralKeys": {
+      "mappingKey": "01",
+      "ephemeralKey": "01"
+    }
+  },
+  "drive": {
+    "op": "none"
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "22",
+        "p1": "c1",
+        "p2": "a4",
+        "data": "800a04007f00070202040402830101",
+        "le": -1
+      },
+      "wire": "0022c1a40f800a04007f00070202040402830101",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "wire": "10860000027c0000",
+      "resp": {
+        "data": "7c12801095a3a016522ee98d01e76cb6b98b42c3",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "error": "PACEError"
+  }
+}

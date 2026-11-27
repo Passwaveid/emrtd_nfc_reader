@@ -1,0 +1,166 @@
+{
+  "suite": "sod_hash_oracle",
+  "schemaVersion": 1,
+  "description": "The layer-3 hash-oracle harness: checkDataGroupHashes over full fixture sets, error text pinned string-for-string",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "all DGs match -> passed",
+      "op": "sod.checkDataGroupHashes",
+      "input": {
+        "sod": "7781b53081b206092a864886f70d010702a081a43081a1020103310f300d060960864801650304020105003081800606678108010101a07604743072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa",
+        "dataGroups": {
+          "DG1": "615b5f1f58505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c3136",
+          "DG2": "755e7f615b0201017f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+        }
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": {
+              "id": "DG1",
+              "sodHash": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+              "computedHash": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+              "match": true
+            },
+            "DG2": {
+              "id": "DG2",
+              "sodHash": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21",
+              "computedHash": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21",
+              "match": true
+            }
+          },
+          "errors": "",
+          "passed": true
+        }
+      }
+    },
+    {
+      "name": "tampered DG1 -> mismatch row + upstream error text verbatim",
+      "op": "sod.checkDataGroupHashes",
+      "input": {
+        "sod": "7781b53081b206092a864886f70d010702a081a43081a1020103310f300d060960864801650304020105003081800606678108010101a07604743072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa",
+        "dataGroups": {
+          "DG1": "615b5f1f58505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c3137",
+          "DG2": "755e7f615b0201017f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+        }
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": {
+              "id": "DG1",
+              "sodHash": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+              "computedHash": "E8EED970C00513E1B9BC9D4F36232FD734D2BBD2D5852E7024467EFF8902955D",
+              "match": false
+            },
+            "DG2": {
+              "id": "DG2",
+              "sodHash": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21",
+              "computedHash": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21",
+              "match": true
+            }
+          },
+          "errors": "DG1 invalid hash:\n  SOD hash:6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22\n   Computed hash:E8EED970C00513E1B9BC9D4F36232FD734D2BBD2D5852E7024467EFF8902955D\n",
+          "passed": false
+        }
+      }
+    },
+    {
+      "name": "read DG absent from SOD -> \"is missing!\" text",
+      "op": "sod.checkDataGroupHashes",
+      "input": {
+        "sod": "7781b53081b206092a864886f70d010702a081a43081a1020103310f300d060960864801650304020105003081800606678108010101a07604743072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa",
+        "dataGroups": {
+          "DG1": "615b5f1f58505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c3136",
+          "DG2": "755e7f615b0201017f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9",
+          "DG3": "6303aabbcc"
+        }
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": {
+              "id": "DG1",
+              "sodHash": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+              "computedHash": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+              "match": true
+            },
+            "DG2": {
+              "id": "DG2",
+              "sodHash": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21",
+              "computedHash": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21",
+              "match": true
+            }
+          },
+          "errors": "DataGroup DG3 is missing!\n",
+          "passed": false
+        }
+      }
+    },
+    {
+      "name": "COM exempt from the missing check",
+      "op": "sod.checkDataGroupHashes",
+      "input": {
+        "sod": "7781b53081b206092a864886f70d010702a081a43081a1020103310f300d060960864801650304020105003081800606678108010101a07604743072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa",
+        "dataGroups": {
+          "COM": "60165f0104303130375f36063034303030305c0460617577",
+          "DG1": "615b5f1f58505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c3136",
+          "DG2": "755e7f615b0201017f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+        }
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": {
+              "id": "DG1",
+              "sodHash": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+              "computedHash": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+              "match": true
+            },
+            "DG2": {
+              "id": "DG2",
+              "sodHash": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21",
+              "computedHash": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21",
+              "match": true
+            }
+          },
+          "errors": "",
+          "passed": true
+        }
+      }
+    },
+    {
+      "name": "SHA-1 legacy SOD -> DG1 matches via hash(\"SHA1\")",
+      "op": "sod.checkDataGroupHashes",
+      "input": {
+        "sod": "776a306806092a864886f70d010702a05b3059020103310f300d0609608648016503040201050030390606678108010101a02f042d302b020100300906052b0e03021a0500301b30190201010414748a7e2d5bbd0c13f0639781a2aaa814dfad59e2310830060201010401aa",
+        "dataGroups": {
+          "DG1": "615b5f1f58505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c3136"
+        }
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA1",
+          "hashes": {
+            "DG1": {
+              "id": "DG1",
+              "sodHash": "748A7E2D5BBD0C13F0639781A2AAA814DFAD59E2",
+              "computedHash": "748A7E2D5BBD0C13F0639781A2AAA814DFAD59E2",
+              "match": true
+            }
+          },
+          "errors": "",
+          "passed": true
+        }
+      }
+    }
+  ]
+}

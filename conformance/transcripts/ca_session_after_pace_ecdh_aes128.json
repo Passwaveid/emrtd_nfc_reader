@@ -1,0 +1,159 @@
+{
+  "transcript": "ca_session_after_pace_ecdh_aes128",
+  "schemaVersion": 1,
+  "description": "Chip Authentication after PACE, id-CA-ECDH-AES-CBC-CMAC-128 over Brainpool P-256: the CA-upgrades-a-PACE-session shape. The PACE ECDH-GM AES-128 handshake runs first with both keypairs injected, then the AES CA suite: MSE:Set AT for internal authentication (00 22 41 A4, DO80(oid) only; DG14 carried no keyId) followed by a single GENERAL AUTHENTICATE carrying DO7C(DO80(point)); a P-256 point wraps to 67 bytes, well under the 224-byte chaining chunk. The GA response (7C 00) is received and discarded (no key confirmation). SM restarts under AES with SSC = 8x00; the final step is the first post-CA protected command. runners omitted = both.",
+  "session": {
+    "secureMessaging": "pace",
+    "mrzKey": "L898902C<369080619406236",
+    "cardAccess": "31143012060a04007f0007020204020202010202010d",
+    "ephemeralKeys": {
+      "mappingKey": "7f4ef07b9ea82fd78ad689b38d0bc78cf21f249d953bc46f4c6e19259c010f99",
+      "ephemeralKey": "a73fb703ac1436a18e0cfa5abb3f7bec7a070e7a6788486bee230c4a22762595"
+    }
+  },
+  "drive": {
+    "op": "chipAuthentication",
+    "args": {
+      "dg14": "6e7c317a300f060a04007f000702020302020201013067060904007f000702020102305a301406072a8648ce3d020106092b2403030208010107034200045cc25ad351f76be4bfa9498f9d9ce70a72a612e4f39df830d956ec82cb3ce3536f038dfed769c8875badf25e6cc0b399a178a3a8e91174f99b66981efa14fcc9",
+      "ephemeralKey": "3f8e0d5b6a2c9147d8e0b2c4a6f8091b3d5f7092a4c6e80b1d3f5a7092b4d6e8"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "22",
+        "p1": "c1",
+        "p2": "a4",
+        "data": "800a04007f0007020204020283010184010d",
+        "le": -1
+      },
+      "wire": "0022c1a412800a04007f0007020204020283010184010d",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      },
+      "cmdFor": {
+        "swift": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f00070202040202830101",
+          "le": -1
+        }
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "wire": "10860000027c0000",
+      "resp": {
+        "data": "7c128010a13f9407601018109dc2d9dc8a1cc390",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c438141047acf3efc982ec45565a4b155129efbc74650dcbfa6362d896fc70262e0c2cc5e544552dcb6725218799115b55c9baa6d9f6bc3a9618e70c25af71777a9c4922d",
+        "le": 256
+      },
+      "wire": "10860000457c438141047acf3efc982ec45565a4b155129efbc74650dcbfa6362d896fc70262e0c2cc5e544552dcb6725218799115b55c9baa6d9f6bc3a9618e70c25af71777a9c4922d00",
+      "resp": {
+        "data": "7c43824104824fba91c9cbe26bef53a0ebe7342a3bf178cea9f45de0b70aa601651fba3f5730d8c879aaa9c9f73991e61b58f4d52eb87a0a0c709a49dc63719363ccd13c54",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c438341042db7a64c0355044ec9df190514c625cba2cea48754887122f3a5ef0d5edd301c3556f3b3b186df10b857b58f6a7eb80f20ba5dc7be1d43d9bf850149fbb36462",
+        "le": 256
+      },
+      "wire": "10860000457c438341042db7a64c0355044ec9df190514c625cba2cea48754887122f3a5ef0d5edd301c3556f3b3b186df10b857b58f6a7eb80f20ba5dc7be1d43d9bf850149fbb3646200",
+      "resp": {
+        "data": "7c438441049e880f842905b8b3181f7af7caa9f0efb743847f44a306d2d28c1d9ec65df6db7764b22277a2eddc3c265a9f018f9cb852e111b768b326904b59a0193776f094",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c0a8508c2b0bd78d94ba866",
+        "le": 256
+      },
+      "wire": "008600000c7c0a8508c2b0bd78d94ba86600",
+      "resp": {
+        "data": "7c0a86083abb9674bce93c08",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "22",
+        "p1": "41",
+        "p2": "a4",
+        "data": "871101a52d46a21a644a0949f68cedb4ccd0078e0815b8d92257ef369e",
+        "le": 256
+      },
+      "wire": "0c2241a41d871101a52d46a21a644a0949f68cedb4ccd0078e0815b8d92257ef369e00",
+      "resp": {
+        "data": "990290008e08bea7b381c494a079",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "875101526776ad7c037826decbd1013fd77df186aa40949fdce4603074d39c0db0c6fdb084e7797cbed8c897884fd4719b623c5cb994a7ed8cbefbc2e122ab7792c134e1dbd99211847b481b9dffe501b33be09701008e08fab95976e101aefd",
+        "le": 256
+      },
+      "wire": "0c86000060875101526776ad7c037826decbd1013fd77df186aa40949fdce4603074d39c0db0c6fdb084e7797cbed8c897884fd4719b623c5cb994a7ed8cbefbc2e122ab7792c134e1dbd99211847b481b9dffe501b33be09701008e08fab95976e101aefd00",
+      "resp": {
+        "data": "8711019d055d86a8d135d3e87ad45fc95dc05a990290008e083eeefb497259a973",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "a4",
+        "p1": "04",
+        "p2": "0c",
+        "data": "871101cb8b51436947926bab859892df07d40f8e087f68ab3629d8e820",
+        "le": 256
+      },
+      "wire": "0ca4040c1d871101cb8b51436947926bab859892df07d40f8e087f68ab3629d8e82000",
+      "resp": {
+        "data": "990290008e08cb3385c60a9b822b",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": {
+      "data": "",
+      "sw": "9000"
+    }
+  }
+}

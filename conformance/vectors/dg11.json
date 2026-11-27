@@ -1,0 +1,422 @@
+{
+  "suite": "dg11",
+  "schemaVersion": 1,
+  "description": "EF.DG11 parsing: additional personal details, ICAO 9303 P10 \u00a74.7.11 Tables 71-72. `dg11.parse` reports the twelve upstream fields under upstream's own spellings, so both runners assert the same shape; `dg11.otherNames` is a dart-only addition (upstream consumes the A0 group and drops it), with shared sibling cases proving the addition disturbs nothing upstream can see. The 5F2B BCD pair splits a fix (upstream decodes a BCD date of birth as UTF-8 only); the 5F16 case pins upstream's string decoding of the image, preserved.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "full specimen: all twelve elements, A0 group present",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b81fe5c195f0ea05f105f2b5f115f425f125f135f145f155f165f175f185f0e144552494b53534f4e3c3c414e4e413c4d41524941a02c0201025f0f15534d4954483c3c4a414e453c454c495a41424554485f0f0e4552494b53534f4e3c3c414e4e415f100831393230333034305f2b0831393734303831325f111053544f434b484f4c4d3c53574544454e5f42173132333c4d41494e3c53543c55544f5049413c434954595f120c2b34363831323334353637385f1308454e47494e4545525f140244525f150c5345452041545441434845445f160b434954495a454e534849505f17134142313233343536373c4344373635343332315f18064d4f54484552"
+      },
+      "expect": {
+        "out": {
+          "fullName": "ERIKSSON<<ANNA<MARIA",
+          "personalNumber": "19203040",
+          "dateOfBirth": "19740812",
+          "placeOfBirth": "STOCKHOLM<SWEDEN",
+          "address": "123<MAIN<ST<UTOPIA<CITY",
+          "telephone": "+46812345678",
+          "profession": "ENGINEER",
+          "title": "DR",
+          "personalSummary": "SEE ATTACHED",
+          "proofOfCitizenship": "CITIZENSHIP",
+          "tdNumbers": "AB1234567<CD7654321",
+          "custodyInfo": "MOTHER"
+        }
+      }
+    },
+    {
+      "name": "full specimen: A0 other names parsed (a dart-only addition; upstream drops the group)",
+      "op": "dg11.otherNames",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6b81fe5c195f0ea05f105f2b5f115f425f125f135f145f155f165f175f185f0e144552494b53534f4e3c3c414e4e413c4d41524941a02c0201025f0f15534d4954483c3c4a414e453c454c495a41424554485f0f0e4552494b53534f4e3c3c414e4e415f100831393230333034305f2b0831393734303831325f111053544f434b484f4c4d3c53574544454e5f42173132333c4d41494e3c53543c55544f5049413c434954595f120c2b34363831323334353637385f1308454e47494e4545525f140244525f150c5345452041545441434845445f160b434954495a454e534849505f17134142313233343536373c4344373635343332315f18064d4f54484552"
+      },
+      "expect": {
+        "out": {
+          "otherNames": [
+            "SMITH<<JANE<ELIZABETH",
+            "ERIKSSON<<ANNA"
+          ]
+        }
+      }
+    },
+    {
+      "name": "minimal template: tag list + one element",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b155c025f0e5f0e0e4552494b53534f4e3c3c414e4e41"
+      },
+      "expect": {
+        "out": {
+          "fullName": "ERIKSSON<<ANNA",
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "a template holding only the 5C tag list -> TagNotValid (the do-while body runs once)",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b045c025f0e"
+      },
+      "expect": {
+        "error": "TagNotValid"
+      }
+    },
+    {
+      "name": "first tag not 5C -> InvalidResponse (the tag list is de-facto mandatory)",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b0b5f0e084552494b53534f4e"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "a tag list naming elements that are absent is tolerated (never cross-checked)",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b195c065f2b5f425f185f0e0e4552494b53534f4e3c3c414e4e41"
+      },
+      "expect": {
+        "out": {
+          "fullName": "ERIKSSON<<ANNA",
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "unknown tags are consumed and dropped; siblings unaffected",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b2e5c025f0e5f010749474e4f5245445f0e0e4552494b53534f4e3c3c414e4e415f7f0c414c534f2049474e4f524544"
+      },
+      "expect": {
+        "out": {
+          "fullName": "ERIKSSON<<ANNA",
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "P10 note: a non-Latin UTF-8 name round-trips",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b1d5c025f0e5f0e16d09cd0aed09bd09bd095d0a03c3cd0a5d090d09dd0a1"
+      },
+      "expect": {
+        "out": {
+          "fullName": "\u041c\u042e\u041b\u041b\u0415\u0420<<\u0425\u0410\u041d\u0421",
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "invalid UTF-8 in 5F13 -> that field null, siblings fine",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b205c025f0e5f0e0e4552494b53534f4e3c3c414e4e415f1303fffe415f14024452"
+      },
+      "expect": {
+        "out": {
+          "fullName": "ERIKSSON<<ANNA",
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": "DR",
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "5F16 carries a JPEG (P10 Table 71) but is string-decoded -> null",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b215c025f165f161affd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "fullName": null,
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "5F2B: 8 ASCII digits pass through verbatim",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b0f5c025f2b5f2b083139373430383132"
+      },
+      "expect": {
+        "out": {
+          "fullName": null,
+          "personalNumber": null,
+          "dateOfBirth": "19740812",
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "4-byte BCD date of birth -> expanded digits (fixed in dart)",
+      "op": "dg11.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6b0b5c025f2b5f2b0419870315"
+      },
+      "expect": {
+        "out": {
+          "fullName": null,
+          "personalNumber": null,
+          "dateOfBirth": "19870315",
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "upstream has no BCD branch for 5F2B; the 0x87 byte fails the UTF-8 init -> nil",
+      "op": "dg11.parse",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "6b0b5c025f2b5f2b0419870315"
+      },
+      "expect": {
+        "out": {
+          "fullName": null,
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "malformed A0 interior: sibling elements still parse (parity is undisturbed)",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b245c035f0ea05f0e0e4552494b53534f4e3c3c414e4e41a0070201015f0f05415f14024452"
+      },
+      "expect": {
+        "out": {
+          "fullName": "ERIKSSON<<ANNA",
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": "DR",
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "malformed A0 interior -> otherNames empty, no throw (the A0 parse is total; dart-only)",
+      "op": "dg11.otherNames",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6b245c035f0ea05f0e0e4552494b53534f4e3c3c414e4e41a0070201015f0f05415f14024452"
+      },
+      "expect": {
+        "out": {
+          "otherNames": []
+        }
+      }
+    },
+    {
+      "name": "no A0 group at all -> otherNames empty (dart-only)",
+      "op": "dg11.otherNames",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6b155c025f0e5f0e0e4552494b53534f4e3c3c414e4e41"
+      },
+      "expect": {
+        "out": {
+          "otherNames": []
+        }
+      }
+    },
+    {
+      "name": "two A0 groups append; non-5F0F records inside are ignored (dart-only)",
+      "op": "dg11.otherNames",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6b405c01a0a0110201015f0f0b534d4954483c3c4a414e45a0280201015f0f09444f453c3c4a4f484e5f1a164e4f542041204e414d45205245434f52442048455245"
+      },
+      "expect": {
+        "out": {
+          "otherNames": [
+            "SMITH<<JANE",
+            "DOE<<JOHN"
+          ]
+        }
+      }
+    },
+    {
+      "name": "two A0 groups: upstream-visible fields stay all-null",
+      "op": "dg11.parse",
+      "input": {
+        "data": "6b405c01a0a0110201015f0f0b534d4954483c3c4a414e45a0280201015f0f09444f453c3c4a4f484e5f1a164e4f542041204e414d45205245434f52442048455245"
+      },
+      "expect": {
+        "out": {
+          "fullName": null,
+          "personalNumber": null,
+          "dateOfBirth": null,
+          "placeOfBirth": null,
+          "address": null,
+          "telephone": null,
+          "profession": null,
+          "title": null,
+          "personalSummary": null,
+          "proofOfCitizenship": null,
+          "tdNumbers": null,
+          "custodyInfo": null
+        }
+      }
+    },
+    {
+      "name": "an A0 record whose value is not valid UTF-8 is dropped, the rest survive (dart-only)",
+      "op": "dg11.otherNames",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6b1a5c01a0a0150201025f0f03fffe415f0f09444f453c3c4a4f484e"
+      },
+      "expect": {
+        "out": {
+          "otherNames": [
+            "DOE<<JOHN"
+          ]
+        }
+      }
+    },
+    {
+      "name": "element value length past the end -> InvalidASN1Value (upstream slice-crash)",
+      "op": "dg11.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6b085c025f0e5f0e204142"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "a two-byte tag opening at the last byte -> TagNotValid (upstream slice-crash)",
+      "op": "dg11.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6b055c025f0e5f"
+      },
+      "expect": {
+        "error": "TagNotValid"
+      }
+    }
+  ]
+}

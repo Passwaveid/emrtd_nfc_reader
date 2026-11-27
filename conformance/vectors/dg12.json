@@ -1,0 +1,352 @@
+{
+  "suite": "dg12",
+  "schemaVersion": 1,
+  "description": "EF.DG12 parsing: additional document details, ICAO 9303 P10 \u00a74.7.12 Tables 73-74. `dg12.parse` reports upstream's field set with the two images as SHA-256 (the dg2/dg7 precedent) and **excludes `otherPersonsDetails`** on both runners: upstream declares it and never assigns it (dead API), and the port does not port it. `dg12.otherPersons` is a dart-only addition that parses the A0 group upstream's branch leaves as a no-op. The 5F26 cases pin the BCD branch upstream already has, including its quirk that ANY 4-byte value takes it; the 5F55 case pins its missing BCD branch, left unfixed.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "full specimen: every element, A0 group present, both images",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c81df5c115f195f26a05f1b5f1c5f1d5f1e5f555f565f191a55544f5049414e2050415353504f525420415554484f524954595f26083230313530333135a0280201025f1a144552494b53534f4e3c3c414e4e413c4d415249415f1a0b534d4954483c3c4a4f484e5f1b0a534545205041474520355f1c0d455849542054415820504149445f1d1affd8ffe000104a46494600010100000100010000aabbccddffd95f1e180000000c6a5020200d0a870a0000000a6a703263ff4fff515f550e32303135303331353132333034355f5611504552534f2d4445564943452d30303432"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": "UTOPIAN PASSPORT AUTHORITY",
+          "dateOfIssue": "20150315",
+          "endorsementsOrObservations": "SEE PAGE 5",
+          "taxOrExitRequirements": "EXIT TAX PAID",
+          "frontImageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f",
+          "rearImageSha256": "6cf35715ed857fe9e900b9d6acf9e5fc4c7d6bbe357a6c88a3d94d54bf0ebf44",
+          "personalizationTime": "20150315123045",
+          "personalizationDeviceSerialNr": "PERSO-DEVICE-0042"
+        }
+      }
+    },
+    {
+      "name": "full specimen: A0 other persons parsed (a dart-only addition; upstream's branch is a no-op)",
+      "op": "dg12.otherPersons",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6c81df5c115f195f26a05f1b5f1c5f1d5f1e5f555f565f191a55544f5049414e2050415353504f525420415554484f524954595f26083230313530333135a0280201025f1a144552494b53534f4e3c3c414e4e413c4d415249415f1a0b534d4954483c3c4a4f484e5f1b0a534545205041474520355f1c0d455849542054415820504149445f1d1affd8ffe000104a46494600010100000100010000aabbccddffd95f1e180000000c6a5020200d0a870a0000000a6a703263ff4fff515f550e32303135303331353132333034355f5611504552534f2d4445564943452d30303432"
+      },
+      "expect": {
+        "out": {
+          "otherPersons": [
+            "ERIKSSON<<ANNA<MARIA",
+            "SMITH<<JOHN"
+          ]
+        }
+      }
+    },
+    {
+      "name": "5F26: 8 ASCII digits pass through verbatim",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c0f5c025f265f26083230313530333135"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": null,
+          "dateOfIssue": "20150315",
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "5F26: a 4-byte BCD date expands to digits (upstream has this branch; shared)",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c0b5c025f265f260420150315"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": null,
+          "dateOfIssue": "20150315",
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "FOUR ASCII digits \"2015\" take the BCD branch too -> \"32303135\"",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c0b5c025f265f260432303135"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": null,
+          "dateOfIssue": "32303135",
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "non-digit nibbles expand verbatim (0xAB -> \"AB\")",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c0b5c025f265f2604abcdef01"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": null,
+          "dateOfIssue": "ABCDEF01",
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "5F26 of any other length takes the UTF-8 branch (3 bytes here)",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c0a5c025f265f2603323031"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": null,
+          "dateOfIssue": "201",
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "a BCD-encoded 5F55 has no branch; the 0x87 byte fails the UTF-8 init -> null on both runners",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c0e5c025f555f550719870315123045"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": null,
+          "dateOfIssue": null,
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "front image only: rear stays absent",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c215c025f1d5f1d1affd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": null,
+          "dateOfIssue": null,
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f",
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "zero-length rear image is present-but-empty, not absent",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c075c025f1e5f1e00"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": null,
+          "dateOfIssue": null,
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "a template holding only the 5C tag list -> TagNotValid (the do-while body runs once)",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c045c025f19"
+      },
+      "expect": {
+        "error": "TagNotValid"
+      }
+    },
+    {
+      "name": "first tag not 5C -> InvalidResponse",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c0c5f1909415554484f52495459"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "a tag list naming absent elements is tolerated (upstream: \"ideally we would check this but...\")",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c125c045f1d5f555f1909415554484f52495459"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": "AUTHORITY",
+          "dateOfIssue": null,
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "unknown tags are consumed and dropped; siblings unaffected",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c285c025f195f020749474e4f5245445f1909415554484f52495459420c414c534f2049474e4f524544"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": "AUTHORITY",
+          "dateOfIssue": null,
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "invalid UTF-8 in 5F56 -> that field null, siblings fine",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c155c025f195f1909415554484f524954595f5602fffe"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": "AUTHORITY",
+          "dateOfIssue": null,
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "malformed A0 interior: sibling elements still parse",
+      "op": "dg12.parse",
+      "input": {
+        "data": "6c185c01a05f1909415554484f52495459a0070201015f1a0941"
+      },
+      "expect": {
+        "out": {
+          "issuingAuthority": "AUTHORITY",
+          "dateOfIssue": null,
+          "endorsementsOrObservations": null,
+          "taxOrExitRequirements": null,
+          "frontImageSha256": null,
+          "rearImageSha256": null,
+          "personalizationTime": null,
+          "personalizationDeviceSerialNr": null
+        }
+      }
+    },
+    {
+      "name": "malformed A0 interior -> otherPersons empty, no throw (the A0 parse is total; dart-only)",
+      "op": "dg12.otherPersons",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6c185c01a05f1909415554484f52495459a0070201015f1a0941"
+      },
+      "expect": {
+        "out": {
+          "otherPersons": []
+        }
+      }
+    },
+    {
+      "name": "no A0 group at all -> otherPersons empty (dart-only)",
+      "op": "dg12.otherPersons",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6c105c025f195f1909415554484f52495459"
+      },
+      "expect": {
+        "out": {
+          "otherPersons": []
+        }
+      }
+    },
+    {
+      "name": "element value length past the end -> InvalidASN1Value (upstream slice-crash)",
+      "op": "dg12.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6c085c025f195f19204142"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "a two-byte tag opening at the last byte -> TagNotValid (upstream slice-crash)",
+      "op": "dg12.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6c055c025f195f"
+      },
+      "expect": {
+        "error": "TagNotValid"
+      }
+    }
+  ]
+}

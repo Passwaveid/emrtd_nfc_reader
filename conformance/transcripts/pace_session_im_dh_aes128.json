@@ -1,0 +1,118 @@
+{
+  "transcript": "pace_session_im_dh_aes128",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "Full PACE DH Integrated Mapping AES-128 session over the RFC 5114 1024/160 group, synthesized from the ICAO 9303 Part 11 App H.2 value chain plus the §4.4.5.2.2 wire rules. The nonce t and both ephemeral keys are App H.2's and injected; the mapped generator ĝ, both public keys and both tokens on the wire are the published ones. As in the ECDH twin the DO80 ciphertext is the sim's (App H's K_pi has no published MRZ). runners:[\"dart\"].",
+  "session": {
+    "secureMessaging": "pace",
+    "cardAccess": "31143012060a04007f00070202040302020102020100",
+    "mrzKey": "T22000129364081251010318",
+    "ephemeralKeys": {
+      "ephemeralKey": "4bd0e54740f9a028e6a515bfdaf967848c4f5f5fff65aa0915947ffd1a0df2fa6981271bc905f3551457b7e03ac3b8066de4aa406c1171fb43dd939c4ba16175103ba3dee16419aa248118f90cc36a3d6f4c373652e0c3cce7f0f1d0c5425b3600f0f0d6a67f004c8bba33f2b4733c7252445c1dfc4f1107203f71d2efb28161",
+      "imNonce": "b3a6db3c870c3e99245e0d1c06b747de"
+    }
+  },
+  "drive": {
+    "op": "selectPassportApplication"
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "22",
+        "p1": "c1",
+        "p2": "a4",
+        "data": "800a04007f00070202040302830101840100",
+        "le": -1
+      },
+      "wire": "0022c1a412800a04007f00070202040302830101840100",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "wire": "10860000027c0000",
+      "resp": {
+        "data": "7c128010854d8df5827fa6852d1a4fa701cdddca",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c128110b3a6db3c870c3e99245e0d1c06b747de",
+        "le": 256
+      },
+      "wire": "10860000147c128110b3a6db3c870c3e99245e0d1c06b747de00",
+      "resp": {
+        "data": "7c028200",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c81838381800f0cc62945a8029251fb7ef3c094e12ec68e4ef07f27cb9d9cd04c5c4250fae0e4f8a951557e929aeb48e5c6dd47f2f5cd7c351a9bd2cd722c07ede166770f08ffcb370262cf308dd7b07f2e0da9caaa1492344c852906919538c98a4ba4187e76ce9d87832386d319ce2e043c3343aeae6edba1a9894dc5094d22f7fe1351d5",
+        "le": 256
+      },
+      "wire": "10860000867c81838381800f0cc62945a8029251fb7ef3c094e12ec68e4ef07f27cb9d9cd04c5c4250fae0e4f8a951557e929aeb48e5c6dd47f2f5cd7c351a9bd2cd722c07ede166770f08ffcb370262cf308dd7b07f2e0da9caaa1492344c852906919538c98a4ba4187e76ce9d87832386d319ce2e043c3343aeae6edba1a9894dc5094d22f7fe1351d500",
+      "resp": {
+        "data": "7c8183848180928d9a0f9dba450f13fc859c6f290d1d36e42431138a4378500beb4e0401854cff111f71cb6dc1d0335807a11388cc8eaa87b07907aad9fba6b169af6d8c26af8dddc39adc3ad2e3ff882b84d23e9768e95a80e4746fb07a9767679fe92133b4d379935c771bd7fbed6c7bb4b1708b275ea75679524cdc9c6a91370cc662a2f3",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c0a850855d61977cbf5307e",
+        "le": 256
+      },
+      "wire": "008600000c7c0a850855d61977cbf5307e00",
+      "resp": {
+        "data": "7c0a8608c2f04230187e1525",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "a4",
+        "p1": "04",
+        "p2": "0c",
+        "data": "87110137bc6fb69b71b5da07b2b63734e82b678e08d086365a409fe542",
+        "le": 256
+      },
+      "wire": "0ca4040c1d87110137bc6fb69b71b5da07b2b63734e82b678e08d086365a409fe54200",
+      "resp": {
+        "data": "990290008e08129ede83164e3f02",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": {
+      "data": "",
+      "sw": "9000"
+    }
+  }
+}

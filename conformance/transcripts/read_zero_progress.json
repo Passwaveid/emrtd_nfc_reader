@@ -1,0 +1,67 @@
+{
+  "transcript": "read_zero_progress",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "A zero-byte 90 00 READ BINARY would loop forever upstream; the port throws after a zero-progress iteration",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "selectFileAndRead",
+    "args": {
+      "tag": "011e"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "011e",
+        "le": null
+      },
+      "wire": "00a4020c02011e",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 4
+      },
+      "wire": "00b0000004",
+      "resp": {
+        "data": "6010aabb",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "02",
+        "data": "",
+        "le": 16
+      },
+      "wire": "00b0000210",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "error": "ResponseError"
+  }
+}

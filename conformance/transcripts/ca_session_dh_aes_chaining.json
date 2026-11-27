@@ -1,0 +1,115 @@
+{
+  "transcript": "ca_session_dh_aes_chaining",
+  "schemaVersion": 1,
+  "description": "Chip Authentication after BAC, id-CA-DH-AES-CBC-CMAC-128 over the RFC 5114 2048-bit/256-bit group: the command-chaining and left-aligned-keySeed shape. DG14 carries keyId 1 on both entries, so MSE:Set AT emits DO84 (84 01 01); the X9.42 dhpublicnumber SPKI carries p, g, q. DO80(y) is 260 bytes, so the 224-byte COMMAND_CHAINING_CHUNK_SIZE splits it into two GENERAL AUTHENTICATE commands. NOTE the two upstream defects this pins: SecureMessaging.maskClassAndPad masks the CLA to the literal 0C, so the 0x10 chaining bit never reaches the chip, and sendGeneralAuthenticate unwraps a DO7C from EVERY response; the simulated chip therefore reassembles by watching for a complete DO80 and answers 7C 00 to the intermediate segment, which is the idealised chip upstream's code assumes. The DH keySeed is the DH_size(p)-byte left-aligned buffer upstream composes. runners omitted = both.",
+  "session": {
+    "secureMessaging": "bac",
+    "mrzKey": "L898902C<369080619406236",
+    "rng": "a1b2c3d4e5f60718292a3b4c5d6e7f8091a2b3c4d5e6f708"
+  },
+  "drive": {
+    "op": "chipAuthentication",
+    "args": {
+      "dg14": "6e820374318203703012060a04007f0007020203010202010102010130820358060904007f000702020101308203463082023906072a8648ce3e02013082022c028201010087a8e61db4b6663cffbbd19c651959998ceef608660dd0f25d2ceed4435e3b00e00df8f1d61957d4faf7df4561b2aa3016c3d91134096faa3bf4296d830e9a7c209e0c6497517abd5a8a9d306bcf67ed91f9e6725b4758c022e0b1ef4275bf7b6c5bfc11d45f9088b941f54eb1e59bb8bc39a0bf12307f5c4fdb70c581b23f76b63acae1caa6b7902d52526735488a0ef13c6d9a51bfa4ab3ad8347796524d8ef6a167b5a41825d967e144e5140564251ccacb83e6b486f6b3ca3f7971506026c0b857f689962856ded4010abd0be621c3a3960a54e710c375f26375d7014103a4b54330c198af126116d2276e11715f693877fad7ef09cadb094ae91e1a1597028201003fb32c9b73134d0b2e77506660edbd484ca7b18f21ef204407f4793a1a0ba12510dbc15077be463fff4fed4aac0bb555be3a6c1b0c6b47b1bc3773bf7e8c6f62901228f8c28cbb18a55ae31341000a650196f931c77a57f2ddf463e5e9ec144b777de62aaab8a8628ac376d282d6ed3864e67982428ebc831d14348f6f2f9193b5045af2767164e1dfc967c1fb3f2e55a4bd1bffe83b9c80d052b985d182ea0adb2a3b7313d3fe14c8484b1e052588b9b7d2bbd2df016199ecd06e1557cd0915b3353bbb64e0ec377fd028370df92b52c7891428cdc67eb6184b523d1db246c32f63078490f00ef8d647d148d47954515e2327cfef98c582664b4c0f6cc416590221008cf83642a709a097b447997640129da299b1a47d1eb3750ba308b0fe64f5fbd30382010500028201005503ec790c1a8d2262c8af29cd2855f643c5e3b6bf927e36c137e147f48d90947da63ba39cebff7bccefa57cd3ce1275a718c3598903d12e843605d2d753febfbf98e077bd2c7c65376206364fd085401301d0b53ead114d85a272fc1a425dcc9a5a97c2d6ea2d28595f7728db9058bb5ee73844182a9c127b90a0a782626dbd05e2b5e7d261b38c0ea51347d2c9aa84da2d18c2cc1bb92363f1ddfd3aac2c74dfd7e86d72fa834f9c7d834fdbc4aae3da7c3c81de091e10aa34926ff7ab8f1602fd9eace8633c8dd40136c5c2210352ec8fca5a10e97daa33170e00756839297356082debb4b9ced3477cf7fe07551f90c4834f0166836ab9d2ab2ea369d56b020101",
+      "ephemeralKey": "11223344556677889900aabbccddeeff102030405060708090a0b0c0d0e0f001"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "wire": "0084000008",
+      "resp": {
+        "data": "4608f91988702212",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "82",
+        "p1": "00",
+        "p2": "00",
+        "data": "6051dc6d184f06a01c3671aac87704023ab65b07f0cea47f5ab835a771010054c205a11e17adebbe",
+        "le": 256
+      },
+      "wire": "00820000286051dc6d184f06a01c3671aac87704023ab65b07f0cea47f5ab835a771010054c205a11e17adebbe00",
+      "resp": {
+        "data": "46b9342a41396cd739bdf22ee89db741e57465690c77dc132680943f9405d4fb662a68aab9f2dc53",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "22",
+        "p1": "41",
+        "p2": "a4",
+        "data": "87110102c85739a5a4083a6247d32f716ea2818e0835ee74cbd0dfe1de",
+        "le": 256
+      },
+      "wire": "0c2241a41d87110102c85739a5a4083a6247d32f716ea2818e0835ee74cbd0dfe1de00",
+      "resp": {
+        "data": "990290008e087dee9e4e631f5d5d",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "8781e901512721ef19092cc36187cfb402fb98b930af24004be7340c4aa89198306e7a6062be71cef726c2755fef81323119bae759997e50072178e10a3f248a184d94e692ad086bc2bac1c088dbaff92d68bf211621c2beef2c86161b9e87a4d34b4f28c6c34532ec52d7e17e6ee790bb7ebb77333556db3c2d5d27baf3b754f53f27f4168718498b264057ceda43bf3f8662da4756faf1431d46ec7008e64d0a077536a302f42d6912d96bce569b63556caacd807da6d5c5f2df9dd645fadd1be344983edd57db688f13d031d8b501b9d538fa57ad5a4290defbebcb338e06066bb385611e4c005ffbe1ea9701008e085442f7922f4ed1f8",
+        "le": 256
+      },
+      "wire": "0c860000f98781e901512721ef19092cc36187cfb402fb98b930af24004be7340c4aa89198306e7a6062be71cef726c2755fef81323119bae759997e50072178e10a3f248a184d94e692ad086bc2bac1c088dbaff92d68bf211621c2beef2c86161b9e87a4d34b4f28c6c34532ec52d7e17e6ee790bb7ebb77333556db3c2d5d27baf3b754f53f27f4168718498b264057ceda43bf3f8662da4756faf1431d46ec7008e64d0a077536a302f42d6912d96bce569b63556caacd807da6d5c5f2df9dd645fadd1be344983edd57db688f13d031d8b501b9d538fa57ad5a4290defbebcb338e06066bb385611e4c005ffbe1ea9701008e085442f7922f4ed1f800",
+      "resp": {
+        "data": "8709012c240c361715c676990290008e08c0cbf9111115dd27",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "872901bf5023dc755739fd1a18a8057eaa6941acd950f6a42f685df440e1a95e8c13fce605a3b2ec9cad2c9701008e08a3dafa478bc09276",
+        "le": 256
+      },
+      "wire": "0c86000038872901bf5023dc755739fd1a18a8057eaa6941acd950f6a42f685df440e1a95e8c13fce605a3b2ec9cad2c9701008e08a3dafa478bc0927600",
+      "resp": {
+        "data": "8709012c240c361715c676990290008e08a8905e7e6c3c1356",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "a4",
+        "p1": "04",
+        "p2": "0c",
+        "data": "87110126608a135546b3841bb37b95fa8e50238e08b8bd0e8028773c07",
+        "le": 256
+      },
+      "wire": "0ca4040c1d87110126608a135546b3841bb37b95fa8e50238e08b8bd0e8028773c0700",
+      "resp": {
+        "data": "990290008e0804e50daff56a8bff",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": {
+      "data": "",
+      "sw": "9000"
+    }
+  }
+}

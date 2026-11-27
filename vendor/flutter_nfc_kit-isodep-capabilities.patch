@@ -1,0 +1,124 @@
+diff -ruN a/flutter_nfc_kit/android/src/main/kotlin/im/nfc/flutter_nfc_kit/FlutterNfcKitPlugin.kt flutter_nfc_kit/android/src/main/kotlin/im/nfc/flutter_nfc_kit/FlutterNfcKitPlugin.kt
+--- a/flutter_nfc_kit/android/src/main/kotlin/im/nfc/flutter_nfc_kit/FlutterNfcKitPlugin.kt	2026-08-24 14:49:18.459510310 +0000
++++ b/flutter_nfc_kit/android/src/main/kotlin/im/nfc/flutter_nfc_kit/FlutterNfcKitPlugin.kt	2026-08-24 14:50:21.012705315 +0000
+@@ -117,6 +117,9 @@
+             // ISO 7816
+             var historicalBytes = ""
+             var hiLayerResponse = ""
++            // ISO-DEP transceive capabilities (absent for non ISO-DEP tags)
++            var maxTransceiveLength: Int? = null
++            var isExtendedLengthApduSupported: Boolean? = null
+             // NFC-F / Felica
+             var manufacturer = ""
+             var systemCode = ""
+@@ -143,6 +146,8 @@
+                         // historicalBytes() may return null but is wrongly typed as ByteArray!
+                         // https://developer.android.com/reference/kotlin/android/nfc/tech/IsoDep#gethistoricalbytes
+                         historicalBytes = isoDep.historicalBytes?.toHexString() ?: ""
++                        maxTransceiveLength = isoDep.maxTransceiveLength
++                        isExtendedLengthApduSupported = isoDep.isExtendedLengthApduSupported
+                     }
+                     tag.techList.contains(MifareClassic::class.java.name) -> {
+                         standard = "ISO 14443-3 (Type A)"
+@@ -181,6 +186,8 @@
+                     val isoDep = IsoDep.get(tag)
+                     tagTechnology = isoDep
+                     hiLayerResponse = isoDep.hiLayerResponse.toHexString()
++                    maxTransceiveLength = isoDep.maxTransceiveLength
++                    isExtendedLengthApduSupported = isoDep.isExtendedLengthApduSupported
+                 } else {
+                     type = "unknown"
+                     standard = "ISO 14443-3 (Type B)"
+@@ -233,6 +240,9 @@
+                 "ndefWritable" to ndefWritable,
+                 "ndefCanMakeReadOnly" to ndefCanMakeReadOnly,
+                 "ndefCapacity" to ndefCapacity,
++                // JSONObject(Map) drops null values, so non ISO-DEP tags omit both keys
++                "maxTransceiveLength" to maxTransceiveLength,
++                "isExtendedLengthApduSupported" to isExtendedLengthApduSupported,
+             ))
+ 
+             if (mifareInfo != null) {
+diff -ruN a/flutter_nfc_kit/CHANGELOG.md flutter_nfc_kit/CHANGELOG.md
+--- a/flutter_nfc_kit/CHANGELOG.md	2026-08-24 14:49:18.460510297 +0000
++++ b/flutter_nfc_kit/CHANGELOG.md	2026-08-24 14:50:21.013705302 +0000
+@@ -207,4 +207,8 @@
+ ## 3.6.2
+ 
+ * New `androidReaderModeFlags` parameter for `poll()` method to customize Android Reader Mode behavior (#225)
+-* Add option to specify `EXTRA_READER_PRESENCE_CHECK_DELAY` on Android (#228)
+\ No newline at end of file
++* Add option to specify `EXTRA_READER_PRESENCE_CHECK_DELAY` on Android (#228)
++
++## Unreleased
++
++* Expose the ISO-DEP transceive capabilities on `NFCTag` for ISO 7816 tags: `maxTransceiveLength` and `isExtendedLengthApduSupported` (Android: `IsoDep.getMaxTransceiveLength` / `isExtendedLengthApduSupported`; iOS: CoreNFC's APDU ceiling and `true`). Both are null for other tag types.
+diff -ruN a/flutter_nfc_kit/ios/flutter_nfc_kit/Sources/flutter_nfc_kit/FlutterNfcKitPlugin.swift flutter_nfc_kit/ios/flutter_nfc_kit/Sources/flutter_nfc_kit/FlutterNfcKitPlugin.swift
+--- a/flutter_nfc_kit/ios/flutter_nfc_kit/Sources/flutter_nfc_kit/FlutterNfcKitPlugin.swift	2026-08-24 14:49:18.457510336 +0000
++++ b/flutter_nfc_kit/ios/flutter_nfc_kit/Sources/flutter_nfc_kit/FlutterNfcKitPlugin.swift	2026-08-24 14:50:21.012705315 +0000
+@@ -525,6 +525,10 @@
+                 result["standard"] = "ISO 14443"
+             }
+             result["aid"] = tag.initialSelectedAID
++            // CoreNFC exposes no transceive cap and chains extended-length APDUs
++            // itself; report the NFCISO7816APDU ceiling (Le up to 65536).
++            result["maxTransceiveLength"] = 65536
++            result["isExtendedLengthApduSupported"] = true
+         case let .miFare(tag):
+             switch tag.mifareFamily {
+             case .plus:
+diff -ruN a/flutter_nfc_kit/lib/flutter_nfc_kit.dart flutter_nfc_kit/lib/flutter_nfc_kit.dart
+--- a/flutter_nfc_kit/lib/flutter_nfc_kit.dart	2026-08-24 14:49:18.458510323 +0000
++++ b/flutter_nfc_kit/lib/flutter_nfc_kit.dart	2026-08-24 14:50:21.013705302 +0000
+@@ -121,6 +121,17 @@
+   /// Mifare-related information (if available)
+   final MifareInfo? mifareInfo;
+ 
++  /// Maximum number of bytes a single [FlutterNfcKit.transceive] can carry
++  /// (ISO-DEP tags only, otherwise null). Android reports
++  /// `IsoDep.getMaxTransceiveLength`; iOS reports CoreNFC's APDU ceiling
++  /// (65536), since CoreNFC exposes no such limit and chains frames itself.
++  final int? maxTransceiveLength;
++
++  /// Whether extended-length APDUs can be sent to this tag (ISO-DEP tags
++  /// only, otherwise null). Android reports
++  /// `IsoDep.isExtendedLengthApduSupported`; iOS is always true.
++  final bool? isExtendedLengthApduSupported;
++
+   NFCTag(
+     this.type,
+     this.id,
+@@ -140,8 +151,10 @@
+     this.ndefWritable,
+     this.ndefCanMakeReadOnly,
+     this.webUSBCustomProbeData,
+-    this.mifareInfo,
+-  );
++    this.mifareInfo, [
++    this.maxTransceiveLength,
++    this.isExtendedLengthApduSupported,
++  ]);
+ 
+   factory NFCTag.fromJson(Map<String, dynamic> json) => _$NFCTagFromJson(json);
+   Map<String, dynamic> toJson() => _$NFCTagToJson(this);
+diff -ruN a/flutter_nfc_kit/lib/flutter_nfc_kit.g.dart flutter_nfc_kit/lib/flutter_nfc_kit.g.dart
+--- a/flutter_nfc_kit/lib/flutter_nfc_kit.g.dart	2026-08-24 14:49:18.457510336 +0000
++++ b/flutter_nfc_kit/lib/flutter_nfc_kit.g.dart	2026-08-24 14:50:21.013705302 +0000
+@@ -45,6 +45,8 @@
+       json['mifareInfo'] == null
+           ? null
+           : MifareInfo.fromJson(json['mifareInfo'] as Map<String, dynamic>),
++      (json['maxTransceiveLength'] as num?)?.toInt(),
++      json['isExtendedLengthApduSupported'] as bool?,
+     );
+ 
+ Map<String, dynamic> _$NFCTagToJson(NFCTag instance) => <String, dynamic>{
+@@ -67,6 +69,8 @@
+       'ndefCanMakeReadOnly': instance.ndefCanMakeReadOnly,
+       'webUSBCustomProbeData': instance.webUSBCustomProbeData,
+       'mifareInfo': instance.mifareInfo,
++      'maxTransceiveLength': instance.maxTransceiveLength,
++      'isExtendedLengthApduSupported': instance.isExtendedLengthApduSupported,
+     };
+ 
+ const _$NFCTagTypeEnumMap = {

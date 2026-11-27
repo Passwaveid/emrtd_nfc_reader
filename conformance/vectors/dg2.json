@@ -1,0 +1,1373 @@
+{
+  "suite": "dg2",
+  "schemaVersion": 1,
+  "description": "DG2 (CBEFF + face image) parsing: field walk, header-check, single-template and image-detection branch set, crash-class deviations, ISO/IEC 39794-5 face records, FaceImageInfo feature mask",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "JPEG happy path: full CBEFF field walk (5F2E)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "755e7f615b0201017f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 72,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 58,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 0,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "JPEG happy path detected format (dart-only surface)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "755e7f615b0201017f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg"
+        }
+      }
+    },
+    {
+      "name": "JPEG happy path encoding (dart-only surface)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "755e7f615b0201017f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso19794"
+        }
+      }
+    },
+    {
+      "name": "legacy record under 7F2E accepted (verifyTag oneOf)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "755e7f615b0201017f6055a10887020101880200087f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 72,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 58,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 0,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "feature points skipped (8 bytes each)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "756c7f61690201017f6063a10887020101880200085f2e5646414300303130000000005600010000004800020102030000000001000000000000010203040506070801020304050607080100005a0078010200000000ffd8ffe000104a464946000101000001000100001020ffd9"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 86,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 72,
+          "nrFeaturePoints": 2,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 0,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "809651ef88fd22163a52f81fe20dd33312373566c26987bb8fd0cc4adfc57a85"
+        }
+      }
+    },
+    {
+      "name": "multi-image DG2: nrImages=2, only first template parsed",
+      "op": "dg2.parse",
+      "input": {
+        "data": "755e7f615b0201027f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 2,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 72,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 58,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 0,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "FAC header split: 58 41 43 00 header rejected up front (dart, fixed)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75487f61450201017f603fa10887020101880200085f2e32584143003031300000000032000100000024000001020300000000010000000000000100005a007801020000000000010203"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "FAC header split: 58 41 43 00 passes upstream && check, dies later (swift)",
+      "op": "dg2.parse",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "75487f61450201017f603fa10887020101880200085f2e32584143003031300000000032000100000024000001020300000000010000000000000100005a007801020000000000010203"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "all-FF record throws InvalidResponse on both runners",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75467f61430201017f603da10887020101880200085f2e30ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "trailing padding after EOI trimmed (RUS-2018 shape)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75627f615f0201017f6059a10887020101880200085f2e4c46414300303130000000004c00010000003e000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd900000000"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 76,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 62,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 0,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "data after true EOI containing FF D9 shifts the cut (backwards scan)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75617f615e0201017f6058a10887020101880200085f2e4b46414300303130000000004b00010000003d000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9aaffd9"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 75,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 61,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 0,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "04ba5b20905b75d32f946186f47243b4dafa1eaba4ed7ca675afc61a565617f1"
+        }
+      }
+    },
+    {
+      "name": "Exif JPEG (FF D8 FF E1) -> UnknownImageFormat (upstream's JFIF-only strictness, kept)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75527f614f0201017f6049a10887020101880200085f2e3c46414300303130000000003c00010000002e000001020300000000010000000000000100005a0078010200000000ffd8ffe10010457869660102ffd9"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "JPEG with no EOI -> UnknownImageFormat",
+      "op": "dg2.parse",
+      "input": {
+        "data": "755c7f61590201017f6053a10887020101880200085f2e46464143003031300000000046000100000038000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a4649460001010000010001000001020304"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "bare JPEG2000 codestream (PRT/ESP/PAK shape)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "754d7f614a0201017f6044a10887020101880200085f2e37464143003031300000000037000100000029000001020300000000010000000000000101005a0078010200000000ff4fff51aabbccffd9"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 55,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 41,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 1,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "3b31f5aca15284415cf0072729da9deb3fc338a6cdb540de6289161fe0da0f08"
+        }
+      }
+    },
+    {
+      "name": "bare codestream detected format (dart-only)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "754d7f614a0201017f6044a10887020101880200085f2e37464143003031300000000037000100000029000001020300000000010000000000000101005a0078010200000000ff4fff51aabbccffd9"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg2000Codestream"
+        }
+      }
+    },
+    {
+      "name": "JP2 box walk returns start-through-jp2c, trailing box dropped",
+      "op": "dg2.parse",
+      "input": {
+        "data": "7581807f617d0201017f6077a10887020101880200085f2e6a46414300303130000000006a00010000005c000001020300000000010000000000000101005a00780102000000000000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeef"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 106,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 92,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 1,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "3977322f76e307d2b5f17550543444f42889f2a54aced2b948630875e04e3425"
+        }
+      }
+    },
+    {
+      "name": "JP2 detected format (dart-only)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581807f617d0201017f6077a10887020101880200085f2e6a46414300303130000000006a00010000005c000001020300000000010000000000000101005a00780102000000000000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeef"
+      },
+      "expect": {
+        "out": {
+          "format": "jp2"
+        }
+      }
+    },
+    {
+      "name": "JP2 length-0 box extends to end of data",
+      "op": "dg2.parse",
+      "input": {
+        "data": "755b7f61580201017f6052a10887020101880200085f2e45464143003031300000000045000100000037000001020300000000010000000000000101005a00780102000000000000000c6a5020200d0a870a000000006a7032630a0b0c"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 69,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 55,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 1,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "9524f8df023d556f1f6b3fc57c50f44539d646d28c00d85cfb4b6e3a78ecf846"
+        }
+      }
+    },
+    {
+      "name": "JP2 XLBox (64-bit length) jp2c consumed",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75687f61650201017f605fa10887020101880200085f2e52464143003031300000000052000100000044000001020300000000010000000000000101005a00780102000000000000000c6a5020200d0a870a000000016a70326300000000000000180102030405060708"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 808529920,
+          "lengthOfRecord": 82,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 68,
+          "nrFeaturePoints": 0,
+          "gender": 1,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 0,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 1,
+          "imageDataType": 1,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "4b366cfc35194247367a0d3829976d4399b093b168b1c4afdcb8e5ee80131974"
+        }
+      }
+    },
+    {
+      "name": "hostile XLBox 64-bit length -> UnknownImageFormat (upstream traps)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75687f61650201017f605fa10887020101880200085f2e52464143003031300000000052000100000044000001020300000000010000000000000100005a00780102000000000000000c6a5020200d0a870a000000016a703263fffffffffffffff00102030405060708"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "XLBox length < 16 -> UnknownImageFormat (both: upstream guard)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75687f61650201017f605fa10887020101880200085f2e52464143003031300000000052000100000044000001020300000000010000000000000100005a00780102000000000000000c6a5020200d0a870a000000016a70326300000000000000080102030405060708"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "box length < 8 -> UnknownImageFormat (both)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75597f61560201017f6050a10887020101880200085f2e43464143003031300000000043000100000035000001020300000000010000000000000100005a00780102000000000000000c6a5020200d0a870a000000056a70326301"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "JP2 with no jp2c box -> UnknownImageFormat",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75647f61610201017f605ba10887020101880200085f2e4e46414300303130000000004e000100000040000001020300000000010000000000000100005a00780102000000000000000c6a5020200d0a870a00000014667479706a703220000000006a703220"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "corrupted JP2 signature -> UnknownImageFormat (exact prefix)",
+      "op": "dg2.parse",
+      "input": {
+        "data": "75607f615d0201017f6057a10887020101880200085f2e4a46414300303130000000004a00010000003c000001020300000000010000000000000100005a00780102000000000000000c6a5020200e0a870a000000106a7032630102030405060708"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "39794-5 mandatory fields only, JPEG (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75537f61500201017f604aa108870201018802002a7f2e3da13b6539a007800103810207e3a12e302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 0,
+          "lengthOfRecord": 0,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 0,
+          "nrFeaturePoints": 0,
+          "gender": 0,
+          "eyeColor": 0,
+          "hairColor": 0,
+          "featureMask": 0,
+          "expression": 0,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 0,
+          "imageDataType": 0,
+          "imageWidth": 0,
+          "imageHeight": 0,
+          "imageColorSpace": 0,
+          "sourceType": 0,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "39794-5 mandatory fields only, JPEG: detected format (dart-only, python-oracle)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75537f61500201017f604aa108870201018802002a7f2e3da13b6539a007800103810207e3a12e302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg"
+        }
+      }
+    },
+    {
+      "name": "39794-5 mandatory fields only, JPEG: encoding (dart-only, python-oracle)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75537f61500201017f604aa108870201018802002a7f2e3da13b6539a007800103810207e3a12e302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso39794"
+        }
+      }
+    },
+    {
+      "name": "39794-5 mandatory fields only, JPEG: FaceImageInfo (dart-only, python-oracle)",
+      "op": "faceImageInfo.from",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75537f61500201017f604aa108870201018802002a7f2e3da13b6539a007800103810207e3a12e302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102"
+      },
+      "expect": {
+        "out": {
+          "expression": "unspecified",
+          "eyeColor": "unspecified",
+          "faceImageType": null,
+          "features": [],
+          "hairColor": "unspecified",
+          "imageColorSpace": "unspecified",
+          "imageDataType": "jpeg",
+          "sourceType": "unspecified"
+        }
+      }
+    },
+    {
+      "name": "39794-5 every mapped field, profile encoding, JP2 (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581cf7f6181cb0201017f6081c4a108870201018802002a7f2e81b6a181b36581b0a007800103810207e3a181a43081a1800100a168a066a064803c0000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeefa11ba003800104a105a103800100a70680015a810178a905a103800102a207a105a103800102a832a005a103800103a105a103800103a205a103800104a4098001ff810100820100a5068001ff810100a608a0068001fe810101"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 0,
+          "lengthOfRecord": 0,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 0,
+          "nrFeaturePoints": 0,
+          "gender": 0,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 3,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 0,
+          "imageDataType": 1,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "3977322f76e307d2b5f17550543444f42889f2a54aced2b948630875e04e3425"
+        }
+      }
+    },
+    {
+      "name": "39794-5 every mapped field, profile encoding, JP2: detected format (dart-only, python-oracle)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581cf7f6181cb0201017f6081c4a108870201018802002a7f2e81b6a181b36581b0a007800103810207e3a181a43081a1800100a168a066a064803c0000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeefa11ba003800104a105a103800100a70680015a810178a905a103800102a207a105a103800102a832a005a103800103a105a103800103a205a103800104a4098001ff810100820100a5068001ff810100a608a0068001fe810101"
+      },
+      "expect": {
+        "out": {
+          "format": "jp2"
+        }
+      }
+    },
+    {
+      "name": "39794-5 every mapped field, profile encoding, JP2: encoding (dart-only, python-oracle)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581cf7f6181cb0201017f6081c4a108870201018802002a7f2e81b6a181b36581b0a007800103810207e3a181a43081a1800100a168a066a064803c0000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeefa11ba003800104a105a103800100a70680015a810178a905a103800102a207a105a103800102a832a005a103800103a105a103800103a205a103800104a4098001ff810100820100a5068001ff810100a608a0068001fe810101"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso39794"
+        }
+      }
+    },
+    {
+      "name": "39794-5 every mapped field, profile encoding, JP2: FaceImageInfo (dart-only, python-oracle)",
+      "op": "faceImageInfo.from",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581cf7f6181cb0201017f6081c4a108870201018802002a7f2e81b6a181b36581b0a007800103810207e3a181a43081a1800100a168a066a064803c0000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeefa11ba003800104a105a103800100a70680015a810178a905a103800102a207a105a103800102a832a005a103800103a105a103800103a205a103800104a4098001ff810100820100a5068001ff810100a608a0068001fe810101"
+      },
+      "expect": {
+        "out": {
+          "expression": "neutral",
+          "eyeColor": "blue",
+          "faceImageType": null,
+          "features": [
+            "featuresAreSpecified",
+            "glasses"
+          ],
+          "hairColor": "blonde",
+          "imageColorSpace": "rgb24",
+          "imageDataType": "jpeg2000",
+          "sourceType": "staticPhotoDigitalCam"
+        }
+      }
+    },
+    {
+      "name": "39794-5 base-standard [0] code form of every enum (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581c37f6181bf0201017f6081b8a108870201018802002a7f2e81aaa181a76581a4a007800103810207e3a18198308195800100a162a060a05e803c0000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeefa117a003800104a103800100a70680015a810178a903800102a205a103800102a82ca003800103a103800103a203800104a4098001ff810100820100a5068001ff810100a608a0068001fe810101"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 0,
+          "lengthOfRecord": 0,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 0,
+          "nrFeaturePoints": 0,
+          "gender": 0,
+          "eyeColor": 2,
+          "hairColor": 3,
+          "featureMask": 3,
+          "expression": 1,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 0,
+          "imageDataType": 1,
+          "imageWidth": 90,
+          "imageHeight": 120,
+          "imageColorSpace": 1,
+          "sourceType": 2,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "3977322f76e307d2b5f17550543444f42889f2a54aced2b948630875e04e3425"
+        }
+      }
+    },
+    {
+      "name": "39794-5 base-standard [0] code form of every enum: detected format (dart-only, python-oracle)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581c37f6181bf0201017f6081b8a108870201018802002a7f2e81aaa181a76581a4a007800103810207e3a18198308195800100a162a060a05e803c0000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeefa117a003800104a103800100a70680015a810178a903800102a205a103800102a82ca003800103a103800103a203800104a4098001ff810100820100a5068001ff810100a608a0068001fe810101"
+      },
+      "expect": {
+        "out": {
+          "format": "jp2"
+        }
+      }
+    },
+    {
+      "name": "39794-5 base-standard [0] code form of every enum: encoding (dart-only, python-oracle)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581c37f6181bf0201017f6081b8a108870201018802002a7f2e81aaa181a76581a4a007800103810207e3a18198308195800100a162a060a05e803c0000000c6a5020200d0a870a00000014667479706a703220000000006a703220000000106a70326301020304050607080000000c75756964deadbeefa117a003800104a103800100a70680015a810178a903800102a205a103800102a82ca003800103a103800103a203800104a4098001ff810100820100a5068001ff810100a608a0068001fe810101"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso39794"
+        }
+      }
+    },
+    {
+      "name": "39794-5 bare JPEG 2000 codestream, lossy (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75427f613f0201017f6039a108870201018802002a7f2e2ca12a6528a007800103810207e3a11d301b800100a116a014a0128009ff4fff51aabbccffd9a105a003800103"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 0,
+          "lengthOfRecord": 0,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 0,
+          "nrFeaturePoints": 0,
+          "gender": 0,
+          "eyeColor": 0,
+          "hairColor": 0,
+          "featureMask": 0,
+          "expression": 0,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 0,
+          "imageDataType": 1,
+          "imageWidth": 0,
+          "imageHeight": 0,
+          "imageColorSpace": 0,
+          "sourceType": 0,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "3b31f5aca15284415cf0072729da9deb3fc338a6cdb540de6289161fe0da0f08"
+        }
+      }
+    },
+    {
+      "name": "39794-5 bare JPEG 2000 codestream, lossy: detected format (dart-only, python-oracle)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75427f613f0201017f6039a108870201018802002a7f2e2ca12a6528a007800103810207e3a11d301b800100a116a014a0128009ff4fff51aabbccffd9a105a003800103"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg2000Codestream"
+        }
+      }
+    },
+    {
+      "name": "39794-5 bare JPEG 2000 codestream, lossy: encoding (dart-only, python-oracle)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75427f613f0201017f6039a108870201018802002a7f2e2ca12a6528a007800103810207e3a11d301b800100a116a014a0128009ff4fff51aabbccffd9a105a003800103"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso39794"
+        }
+      }
+    },
+    {
+      "name": "39794-5 unmappable codes read as 0 (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581847f6181800201017f607aa108870201018802002a7f2e6da16b6569a007800103810207e3a15e305c800100a137a035a033801affd8ffe000104a46494600010100000100010000aabbccddffd9a10ca003800102a905a103800106a207a105a103800100a81ea105a103800107a205a103800109a4098401ff8901ff8a01ffa5038101ff"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 0,
+          "lengthOfRecord": 0,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 0,
+          "nrFeaturePoints": 0,
+          "gender": 0,
+          "eyeColor": 0,
+          "hairColor": 0,
+          "featureMask": 1,
+          "expression": 0,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 0,
+          "imageDataType": 0,
+          "imageWidth": 0,
+          "imageHeight": 0,
+          "imageColorSpace": 4,
+          "sourceType": 7,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "39794-5 unmappable codes read as 0: detected format (dart-only, python-oracle)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581847f6181800201017f607aa108870201018802002a7f2e6da16b6569a007800103810207e3a15e305c800100a137a035a033801affd8ffe000104a46494600010100000100010000aabbccddffd9a10ca003800102a905a103800106a207a105a103800100a81ea105a103800107a205a103800109a4098401ff8901ff8a01ffa5038101ff"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg"
+        }
+      }
+    },
+    {
+      "name": "39794-5 unmappable codes read as 0: encoding (dart-only, python-oracle)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7581847f6181800201017f607aa108870201018802002a7f2e6da16b6569a007800103810207e3a15e305c800100a137a035a033801affd8ffe000104a46494600010100000100010000aabbccddffd9a10ca003800102a905a103800106a207a105a103800100a81ea105a103800107a205a103800109a4098401ff8901ff8a01ffa5038101ff"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso39794"
+        }
+      }
+    },
+    {
+      "name": "39794-5 unknown eye and hair colour, two expression flags (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "756b7f61680201017f6062a108870201018802002a7f2e55a1536551a007800103810207e3a1463044800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102a816a105a103800100a205a103800100a5068001ff8401ff"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 0,
+          "lengthOfRecord": 0,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 0,
+          "nrFeaturePoints": 0,
+          "gender": 0,
+          "eyeColor": 255,
+          "hairColor": 255,
+          "featureMask": 0,
+          "expression": 0,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 0,
+          "imageDataType": 0,
+          "imageWidth": 0,
+          "imageHeight": 0,
+          "imageColorSpace": 0,
+          "sourceType": 0,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "39794-5 unknown eye and hair colour, two expression flags: detected format (dart-only, python-oracle)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "756b7f61680201017f6062a108870201018802002a7f2e55a1536551a007800103810207e3a1463044800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102a816a105a103800100a205a103800100a5068001ff8401ff"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg"
+        }
+      }
+    },
+    {
+      "name": "39794-5 unknown eye and hair colour, two expression flags: encoding (dart-only, python-oracle)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "756b7f61680201017f6062a108870201018802002a7f2e55a1536551a007800103810207e3a1463044800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102a816a105a103800100a205a103800100a5068001ff8401ff"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso39794"
+        }
+      }
+    },
+    {
+      "name": "39794-5 two representations, the first is read (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75707f616d0201017f6067a108870201018802002a7f2e5aa1586556a007800103810207e3a14b302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102301b800101a116a014a0128009ff4fff51aabbccffd9a105a003800103"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 0,
+          "lengthOfRecord": 0,
+          "numberOfFacialImages": 2,
+          "facialRecordDataLength": 0,
+          "nrFeaturePoints": 0,
+          "gender": 0,
+          "eyeColor": 0,
+          "hairColor": 0,
+          "featureMask": 0,
+          "expression": 0,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 0,
+          "imageDataType": 0,
+          "imageWidth": 0,
+          "imageHeight": 0,
+          "imageColorSpace": 0,
+          "sourceType": 0,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "39794-5 two representations, the first is read: detected format (dart-only, python-oracle)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75707f616d0201017f6067a108870201018802002a7f2e5aa1586556a007800103810207e3a14b302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102301b800101a116a014a0128009ff4fff51aabbccffd9a105a003800103"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg"
+        }
+      }
+    },
+    {
+      "name": "39794-5 two representations, the first is read: encoding (dart-only, python-oracle)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75707f616d0201017f6067a108870201018802002a7f2e5aa1586556a007800103810207e3a14b302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102301b800101a116a014a0128009ff4fff51aabbccffd9a105a003800103"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso39794"
+        }
+      }
+    },
+    {
+      "name": "39794-5 envelope under 5F2E is dispatched on content (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75537f61500201017f604aa108870201018802002a5f2e3da13b6539a007800103810207e3a12e302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102"
+      },
+      "expect": {
+        "out": {
+          "nrImages": 1,
+          "versionNumber": 0,
+          "lengthOfRecord": 0,
+          "numberOfFacialImages": 1,
+          "facialRecordDataLength": 0,
+          "nrFeaturePoints": 0,
+          "gender": 0,
+          "eyeColor": 0,
+          "hairColor": 0,
+          "featureMask": 0,
+          "expression": 0,
+          "poseAngle": 0,
+          "poseAngleUncertainty": 0,
+          "faceImageType": 0,
+          "imageDataType": 0,
+          "imageWidth": 0,
+          "imageHeight": 0,
+          "imageColorSpace": 0,
+          "sourceType": 0,
+          "deviceType": 0,
+          "quality": 0,
+          "imageSha256": "d8f8359438f01b0fac6de186674d0f570374bb0cb6cd82aa993241b240e1df6f"
+        }
+      }
+    },
+    {
+      "name": "39794-5 envelope under 5F2E is dispatched on content: detected format (dart-only, python-oracle)",
+      "op": "dg2.faceImageFormat",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75537f61500201017f604aa108870201018802002a5f2e3da13b6539a007800103810207e3a12e302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102"
+      },
+      "expect": {
+        "out": {
+          "format": "jpeg"
+        }
+      }
+    },
+    {
+      "name": "39794-5 envelope under 5F2E is dispatched on content: encoding (dart-only, python-oracle)",
+      "op": "dg2.encoding",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75537f61500201017f604aa108870201018802002a5f2e3da13b6539a007800103810207e3a12e302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800102"
+      },
+      "expect": {
+        "out": {
+          "encoding": "iso39794"
+        }
+      }
+    },
+    {
+      "name": "39794-5 no representation -> NotYetSupported (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75257f61220201017f601ca108870201018802002a7f2e0fa10d650ba007800103810207e3a100"
+      },
+      "expect": {
+        "error": "NotYetSupported"
+      }
+    },
+    {
+      "name": "39794-5 3D shape representation -> NotYetSupported (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75587f61550201017f604fa108870201018802002a7f2e42a140653ea007800103810207e3a1333031800100a12ca02aa12880020102a122a004a002a000a103800100a215800380000181038000018203800001830084008500"
+      },
+      "expect": {
+        "error": "NotYetSupported"
+      }
+    },
+    {
+      "name": "39794-5 image representation extension block -> NotYetSupported (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "752e7f612b0201017f6025a108870201018802002a7f2e18a1166514a007800103810207e3a1093007800100a102a100"
+      },
+      "expect": {
+        "error": "NotYetSupported"
+      }
+    },
+    {
+      "name": "39794-5 PNG image data format -> NotYetSupported (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75537f61500201017f604aa108870201018802002a7f2e3da13b6539a007800103810207e3a12e302c800100a127a025a023801affd8ffe000104a46494600010100000100010000aabbccddffd9a105a003800105"
+      },
+      "expect": {
+        "error": "NotYetSupported"
+      }
+    },
+    {
+      "name": "39794-5 image data format extension block -> NotYetSupported (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75527f614f0201017f6049a108870201018802002a7f2e3ca13a6538a007800103810207e3a12d302b800100a126a024a022801affd8ffe000104a46494600010100000100010000aabbccddffd9a104a002a100"
+      },
+      "expect": {
+        "error": "NotYetSupported"
+      }
+    },
+    {
+      "name": "39794-5 empty image data -> NotYetSupported (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75397f61360201017f6030a108870201018802002a7f2e23a121651fa007800103810207e3a1143012800100a10da00ba0098000a105a003800102"
+      },
+      "expect": {
+        "error": "NotYetSupported"
+      }
+    },
+    {
+      "name": "39794-5 FaceImageDataBlock that is not TLV (the former 39794-5 detection bytes) -> InvalidDataPassed (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "751d7f611a0201017f6014a108870201018802002a7f2e07a1056503010203"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "39794-5 no representation blocks element -> InvalidDataPassed (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75237f61200201017f601aa108870201018802002a7f2e0da10b6509a007800103810207e3"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "39794-5 no image information block -> InvalidDataPassed (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "754c7f61490201017f6043a108870201018802002a7f2e36a1346532a007800103810207e3a1273025800100a120a01ea01c801affd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "39794-5 no image data format -> InvalidDataPassed (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75567f61530201017f604da108870201018802002a7f2e40a13e653ca007800103810207e3a131302f800100a12aa028a026801affd8ffe000104a46494600010100000100010000aabbccddffd9a108a70680015a810178"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "39794-5 Exif JPEG image -> UnknownImageFormat (dart-only, python-oracle)",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75477f61440201017f603ea108870201018802002a7f2e31a12f652da007800103810207e3a1223020800100a11ba019a017800effd8ffe10010457869660102ffd9a105a003800102"
+      },
+      "expect": {
+        "error": "UnknownImageFormat"
+      }
+    },
+    {
+      "name": "empty 02 value (nrImages) -> InvalidDataPassed",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "75597f615602007f6051a104870201015f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "record truncated mid-fields -> InvalidDataPassed",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "752a7f61270201017f6021a10887020101880200085f2e1446414300303130000000004800010000003a0000"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "feature-point skip past the end -> InvalidDataPassed",
+      "op": "dg2.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "755b7f61580201017f6052a10887020101880200085f2e4546414300303130000000004500010000003700ff01020300000000010000000000000100005a0078010200000000ffd8ffe000104a4649460001010000010001000001ffd9"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "FaceImageInfo happy decode",
+      "op": "faceImageInfo.from",
+      "input": {
+        "data": "755e7f615b0201017f6055a10887020101880200085f2e4846414300303130000000004800010000003a000001020300000000010000000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000aabbccddffd9"
+      },
+      "expect": {
+        "out": {
+          "expression": "neutral",
+          "eyeColor": "blue",
+          "faceImageType": "fullFrontal",
+          "features": [],
+          "hairColor": "blonde",
+          "imageColorSpace": "rgb24",
+          "imageDataType": "jpeg",
+          "sourceType": "staticPhotoDigitalCam"
+        }
+      }
+    },
+    {
+      "name": "single-flag featureMask agrees on both runners",
+      "op": "faceImageInfo.from",
+      "input": {
+        "data": "755b7f61580201017f6052a10887020101880200085f2e45464143003031300000000045000100000037000001020300000200010000000000000100005a0078010200000000ffd8ffe000104a4649460001010000010001000001ffd9"
+      },
+      "expect": {
+        "out": {
+          "expression": "neutral",
+          "eyeColor": "blue",
+          "faceImageType": "fullFrontal",
+          "features": [
+            "glasses"
+          ],
+          "hairColor": "blonde",
+          "imageColorSpace": "rgb24",
+          "imageDataType": "jpeg",
+          "sourceType": "staticPhotoDigitalCam"
+        }
+      }
+    },
+    {
+      "name": "featureMask split: multi-bit mask decodes to flag set (dart, fixed)",
+      "op": "faceImageInfo.from",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "755b7f61580201017f6052a10887020101880200085f2e45464143003031300000000045000100000037000001020300000300010000000000000100005a0078010200000000ffd8ffe000104a4649460001010000010001000001ffd9"
+      },
+      "expect": {
+        "out": {
+          "expression": "neutral",
+          "eyeColor": "blue",
+          "faceImageType": "fullFrontal",
+          "features": [
+            "featuresAreSpecified",
+            "glasses"
+          ],
+          "hairColor": "blonde",
+          "imageColorSpace": "rgb24",
+          "imageDataType": "jpeg",
+          "sourceType": "staticPhotoDigitalCam"
+        }
+      }
+    },
+    {
+      "name": "featureMask split: multi-bit mask -> nil upstream (swift)",
+      "op": "faceImageInfo.from",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "755b7f61580201017f6052a10887020101880200085f2e45464143003031300000000045000100000037000001020300000300010000000000000100005a0078010200000000ffd8ffe000104a4649460001010000010001000001ffd9"
+      },
+      "expect": {
+        "out": {
+          "expression": "neutral",
+          "eyeColor": "blue",
+          "faceImageType": "fullFrontal",
+          "features": [],
+          "hairColor": "blonde",
+          "imageColorSpace": "rgb24",
+          "imageDataType": "jpeg",
+          "sourceType": "staticPhotoDigitalCam"
+        }
+      }
+    },
+    {
+      "name": "out-of-range code points decode to null; 0xFF/0x07 named members hit",
+      "op": "faceImageInfo.from",
+      "input": {
+        "data": "755b7f61580201017f6052a10887020101880200085f2e4546414300303130000000004500010000003700000199ff00000000010000000000000100005a0078010700000000ffd8ffe000104a4649460001010000010001000001ffd9"
+      },
+      "expect": {
+        "out": {
+          "expression": "neutral",
+          "eyeColor": null,
+          "faceImageType": "fullFrontal",
+          "features": [],
+          "hairColor": "unknown",
+          "imageColorSpace": "rgb24",
+          "imageDataType": "jpeg",
+          "sourceType": "unknown"
+        }
+      }
+    }
+  ]
+}

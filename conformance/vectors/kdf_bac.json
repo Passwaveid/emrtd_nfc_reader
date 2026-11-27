@@ -1,0 +1,134 @@
+{
+  "suite": "kdf_bac",
+  "schemaVersion": 1,
+  "description": "BAC key derivation: ICAO 9303 P11 App D.1-D.3 worked example end-to-end (kmrz -> Kseed, deriveKey ENC/MAC, XOR-Kseed session derivation, incl. the >9-char document-number MRZ variant). Expected deriveKey outputs are the PRE-PARITY 24-byte forms upstream produces: App D prints parity-adjusted keys; the generator recomputed from the printed SHA-1 keydata and asserted the adjusted forms match App D.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "ICAO P11 App D.2 kmrz -> SHA-1 (9-char document number)",
+      "op": "calcHash",
+      "input": {
+        "data": "4c383938393032433c333639303830363139343036323336",
+        "algorithm": "SHA1"
+      },
+      "expect": {
+        "out": {
+          "hash": "239ab9cb282daf66231dc5a4df6bfbaedf477565"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.2 kmrz -> SHA-1 (>9-char document number variant, hashlib-computed)",
+      "op": "calcHash",
+      "input": {
+        "data": "443233313435383930373334393334303731323739353037313232",
+        "algorithm": "SHA1"
+      },
+      "expect": {
+        "out": {
+          "hash": "b366ad857ddca2b08c0e2998117147300fa5d581"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.1 deriveKey ENC (DESede default): pre-parity 24-byte form",
+      "op": "deriveKey",
+      "input": {
+        "keySeed": "239ab9cb282daf66231dc5a4df6bfbae",
+        "cipherAlgName": "DESede",
+        "keyLength": 128,
+        "mode": "ENC"
+      },
+      "expect": {
+        "out": {
+          "key": "ab94fcedf2664edfb9b291f85d7f77f2ab94fcedf2664edf"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.1 deriveKey MAC: pre-parity 24-byte form",
+      "op": "deriveKey",
+      "input": {
+        "keySeed": "239ab9cb282daf66231dc5a4df6bfbae",
+        "cipherAlgName": "DESede",
+        "keyLength": 128,
+        "mode": "MAC"
+      },
+      "expect": {
+        "out": {
+          "key": "7862d9ece03c1bcd4d77089dcf1314427862d9ece03c1bcd"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.3 Kseed = KIFD xor KIC",
+      "op": "xor",
+      "input": {
+        "a": "0b795240cb7049b01c19b33e32804f0b",
+        "b": "0b4f80323eb3191cb04970cb4052790b"
+      },
+      "expect": {
+        "out": {
+          "data": "0036d272f5c350acac50c3f572d23600"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.3 session deriveKey ENC: pre-parity (adjusted form is the printed KSEnc)",
+      "op": "deriveKey",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "mode": "ENC"
+      },
+      "expect": {
+        "out": {
+          "key": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.3 session deriveKey MAC: pre-parity (adjusted form is the printed KSMac)",
+      "op": "deriveKey",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "mode": "MAC"
+      },
+      "expect": {
+        "out": {
+          "key": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208"
+        }
+      }
+    },
+    {
+      "name": "deriveKey DESede accepts keyLength 112 as alias of 128",
+      "op": "deriveKey",
+      "input": {
+        "keySeed": "239ab9cb282daf66231dc5a4df6bfbae",
+        "cipherAlgName": "DESede",
+        "keyLength": 112,
+        "mode": "ENC"
+      },
+      "expect": {
+        "out": {
+          "key": "ab94fcedf2664edfb9b291f85d7f77f2ab94fcedf2664edf"
+        }
+      }
+    },
+    {
+      "name": "deriveKey DESede rejects other key lengths",
+      "op": "deriveKey",
+      "input": {
+        "keySeed": "239ab9cb282daf66231dc5a4df6bfbae",
+        "cipherAlgName": "DESede",
+        "keyLength": 64,
+        "mode": "ENC"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    }
+  ]
+}

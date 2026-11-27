@@ -1,0 +1,118 @@
+{
+  "transcript": "pace_session_im_ecdh_aes128",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "Full PACE ECDH Integrated Mapping AES-128 session over Brainpool P-256, synthesized from the ICAO 9303 Part 11 App H.1 value chain plus the §4.4.5.2.2 wire rules (App H publishes values only, no APDUs). The nonce t and both ephemeral keys are App H.1's and injected (t as imNonce); the mapped generator, both public keys and both authentication tokens on the wire are the published ones. The DO80 ciphertext is the sim's: App H prints K_pi = 591468CD... with no MRZ that derives it, so only the decrypted nonce s is reproducible. GA round 2 carries DO81 = t and the chip answers with an empty DO82, as the §4.4.5.2.2 note prescribes. runners:[\"dart\"]; upstream stubs IM out (pace_session_im_partial.json).",
+  "session": {
+    "secureMessaging": "pace",
+    "cardAccess": "31143012060a04007f0007020204040202010202010d",
+    "mrzKey": "T22000129364081251010318",
+    "ephemeralKeys": {
+      "ephemeralKey": "a73fb703ac1436a18e0cfa5abb3f7bec7a070e7a6788486bee230c4a22762595",
+      "imNonce": "5dd4cbfc96f5453b130d890a1cdbae32"
+    }
+  },
+  "drive": {
+    "op": "selectPassportApplication"
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "22",
+        "p1": "c1",
+        "p2": "a4",
+        "data": "800a04007f0007020204040283010184010d",
+        "le": -1
+      },
+      "wire": "0022c1a412800a04007f0007020204040283010184010d",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "wire": "10860000027c0000",
+      "resp": {
+        "data": "7c12801058934977e13bb15341e1822abb1a8e95",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c1281105dd4cbfc96f5453b130d890a1cdbae32",
+        "le": 256
+      },
+      "wire": "10860000147c1281105dd4cbfc96f5453b130d890a1cdbae3200",
+      "resp": {
+        "data": "7c028200",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c4383410489cba23ffe96aa18d824627c3e934e54a9fd0b87a95d1471dc1c0abfdcd640d46755de9b7b778280b6bebd57439adfeb0e21fd4ed6df42578c13418a59b34c37",
+        "le": 256
+      },
+      "wire": "10860000457c4383410489cba23ffe96aa18d824627c3e934e54a9fd0b87a95d1471dc1c0abfdcd640d46755de9b7b778280b6bebd57439adfeb0e21fd4ed6df42578c13418a59b34c3700",
+      "resp": {
+        "data": "7c4384410467f78e5f7f7686082b293e8d087e056916d0f74bc01a5f8957d0de45691e51e8932b69a962b52a0985ad2c0a271ee6a13a8adddcd1a3a994b9ded257f4d22753",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c0a8508450f02b86f6a0909",
+        "le": 256
+      },
+      "wire": "008600000c7c0a8508450f02b86f6a090900",
+      "resp": {
+        "data": "7c0a860875d4d96e8d5b0308",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "a4",
+        "p1": "04",
+        "p2": "0c",
+        "data": "87110164f8a41bfd5031171da9ae8c6edb879f8e08d2aa07db38a815a7",
+        "le": 256
+      },
+      "wire": "0ca4040c1d87110164f8a41bfd5031171da9ae8c6edb879f8e08d2aa07db38a815a700",
+      "resp": {
+        "data": "990290008e08a606d8a3d3f44ac8",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": {
+      "data": "",
+      "sw": "9000"
+    }
+  }
+}

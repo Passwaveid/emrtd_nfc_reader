@@ -1,0 +1,547 @@
+{
+  "suite": "active_auth",
+  "schemaVersion": 1,
+  "description": "Active Authentication: the ActiveAuthenticationInfo friendly-name tables and the challenge-signature verifier. RSA cases walk the full ISO 9796-2-style recovery upstream implements: one per ISO 10118-3 trailer, plus the wrong-hash and unknown-trailer failures, the out-of-range signature, the small-modulus underflow (dart-only; upstream crashes), the empty-recovered-message boundary that pins the guard from below, and the leading-zero decrypt. ECDSA cases drive the plain r||s split and the lowercase-contains digest chain, including its SHA-256 default and the RIPEMD-160 always-fail. Keys and signatures are authored independently (Python/OpenSSL), not by the implementation under test.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "aaInfo signature algorithm 0.4.0.127.0.7.1.1.4.1.1 -> ecdsa-plain-SHA1",
+      "op": "aaInfo.signatureAlgorithm",
+      "input": {
+        "oid": "0.4.0.127.0.7.1.1.4.1.1"
+      },
+      "expect": {
+        "out": {
+          "name": "ecdsa-plain-SHA1"
+        }
+      }
+    },
+    {
+      "name": "aaInfo signature algorithm 0.4.0.127.0.7.1.1.4.1.2 -> ecdsa-plain-SHA224",
+      "op": "aaInfo.signatureAlgorithm",
+      "input": {
+        "oid": "0.4.0.127.0.7.1.1.4.1.2"
+      },
+      "expect": {
+        "out": {
+          "name": "ecdsa-plain-SHA224"
+        }
+      }
+    },
+    {
+      "name": "aaInfo signature algorithm 0.4.0.127.0.7.1.1.4.1.3 -> ecdsa-plain-SHA256",
+      "op": "aaInfo.signatureAlgorithm",
+      "input": {
+        "oid": "0.4.0.127.0.7.1.1.4.1.3"
+      },
+      "expect": {
+        "out": {
+          "name": "ecdsa-plain-SHA256"
+        }
+      }
+    },
+    {
+      "name": "aaInfo signature algorithm 0.4.0.127.0.7.1.1.4.1.4 -> ecdsa-plain-SHA384",
+      "op": "aaInfo.signatureAlgorithm",
+      "input": {
+        "oid": "0.4.0.127.0.7.1.1.4.1.4"
+      },
+      "expect": {
+        "out": {
+          "name": "ecdsa-plain-SHA384"
+        }
+      }
+    },
+    {
+      "name": "aaInfo signature algorithm 0.4.0.127.0.7.1.1.4.1.5 -> ecdsa-plain-SHA512",
+      "op": "aaInfo.signatureAlgorithm",
+      "input": {
+        "oid": "0.4.0.127.0.7.1.1.4.1.5"
+      },
+      "expect": {
+        "out": {
+          "name": "ecdsa-plain-SHA512"
+        }
+      }
+    },
+    {
+      "name": "aaInfo signature algorithm 0.4.0.127.0.7.1.1.4.1.6 -> ecdsa-plain-RIPEMD160",
+      "op": "aaInfo.signatureAlgorithm",
+      "input": {
+        "oid": "0.4.0.127.0.7.1.1.4.1.6"
+      },
+      "expect": {
+        "out": {
+          "name": "ecdsa-plain-RIPEMD160"
+        }
+      }
+    },
+    {
+      "name": "aaInfo signature algorithm: unknown OID -> null",
+      "op": "aaInfo.signatureAlgorithm",
+      "input": {
+        "oid": "1.2.840.10045.4.3.2"
+      },
+      "expect": {
+        "out": {
+          "name": null
+        }
+      }
+    },
+    {
+      "name": "aaInfo signature algorithm: absent (no third child) -> null",
+      "op": "aaInfo.signatureAlgorithm",
+      "input": {
+        "oid": null
+      },
+      "expect": {
+        "out": {
+          "name": null
+        }
+      }
+    },
+    {
+      "name": "aaInfo protocol OID string: id-AA",
+      "op": "aaInfo.protocolOIDString",
+      "input": {
+        "oid": "2.23.136.1.1.5"
+      },
+      "expect": {
+        "out": {
+          "name": "id-AA"
+        }
+      }
+    },
+    {
+      "name": "aaInfo protocol OID string: unknown OID passes through",
+      "op": "aaInfo.protocolOIDString",
+      "input": {
+        "oid": "2.23.136.1.1.9"
+      },
+      "expect": {
+        "out": {
+          "name": "2.23.136.1.1.9"
+        }
+      }
+    },
+    {
+      "name": "RSA-1024 recovery, ISO 9796-2 trailer BC -> SHA1",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "43ee12a6eec422503d816baf28369f30331ee13213ce0fc9817faf754511015ca89c4895df1def51ebb3f878c062ba595ac7d715dbbf5c09bda7928986efb680e4477226d02be4ac7d9c2b611e9399ac76c34698b96fb1d8c10cb3d8608ef9e09c049b9786b3a864f9db39bb7a5e50747180ed315ca5f4bedfb6ac403a300fb4"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA1"
+        }
+      }
+    },
+    {
+      "name": "RSA-1024 recovery, ISO 9796-2 trailer 33CC -> SHA1",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "088564f4f61289c2cffac291c9c40a14c3ce3badba7a7c6683eb126a98c2f3dffc799c2b42ccef0fa15a21a3467e7e8faaa4dfcc0fbe8072669e31594baea0c39d6bf550d44d45b6433fefce8a9662400a66f0d62ae2351f533f01f23f41fb956232423a6c1c08b4385bfa26ddae95988ba14557c9cd41b17fac9e043e84dc84"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA1"
+        }
+      }
+    },
+    {
+      "name": "RSA-1024 recovery, ISO 9796-2 trailer 34CC -> SHA256",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "6b929a822260f3ac1c5c829c8a3263729e8750384d7ae8257a6f6507975033d7910d511625bcf825d983a2cfd283275972964f21001f555747e3e7fca082fc6f09fdb9f4959e3739a4241af6c503d205c4370fffc1aec955a3ebb741f4d3ae1d05df320b3557eff1c73696a0ec4bdcef22e8938dac1bcc7752e557ba2d16e12b"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "RSA-1024 recovery, ISO 9796-2 trailer 35CC -> SHA512",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "5f648e3ca32c47c5c7831931b0562cfccc5ccc95c99156865ab2801089adea0abd44657d16bf04c0424634f2e23d4159ef6fe8b9a475ba9da1765838f9f20ca38f619f3cfdd9baed225872be7131f66d0a374f24e064fe8b30f81d8a250748f414f649df363d587cac5f31dd062732e93cdfc0bb7dbd37e74d85159089d82aa9"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA512"
+        }
+      }
+    },
+    {
+      "name": "RSA-1024 recovery, ISO 9796-2 trailer 36CC -> SHA384",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "05059f71f483251f141b54ec5963bb8b623eb521bfbc5e3448144de67b196862b61d39f3488e6823b6baf2b8ad8456eb0b8dd151783908441fd1962c5e73ff1a663f0448fcdb0e1d7289779fd23d0f161e7d48c0d7edca86bb8e29e666ea2d739bfff896e55f4951c223826ab95e7251aedf63a078c652758fa3938d4f101f2a"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA384"
+        }
+      }
+    },
+    {
+      "name": "RSA-1024 recovery, ISO 9796-2 trailer 38CC -> SHA224",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "2ad4c950fd0efba9dfafb029c4c59039afeb5d4884ad2424e0b1f09091752ef27eb6a643009bd66d063540c359dabc6e53e82bc9e75736f1e28cadefb69dff9d397cc58801e8dad169bad5129c8419582820ae2e36bb21a867d875e044a674b22f06dd327ae893061699834d17ee6ca990aa1f034ce5743de10da6e527d7fce7"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA224"
+        }
+      }
+    },
+    {
+      "name": "RSA-1024: recovered digest does not match H(message||challenge)",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "2a3eef78c39d57fb448b421d5c863067645476c7fadbb7a41e288d563b51fc725831e944921529d6153d2ec3cdddf14ee0ecfe2743699348ebcb92ff055410d27f64370456daae5261ee0b58590f605d6b503a610fc8c5fd1c2efb8746a0c3cb333ac145c0612b4bf1188a8a2fb656579de6125e9fbb4b87f0b029e1e4f81344"
+      },
+      "expect": {
+        "out": {
+          "passed": false,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "RSA-1024: unrecognized trailer byte 0x99 -> no hash algorithm, failed",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "4b9358a8bad3dbfab3e44c2143c4d07caa585ba54c66f726f474f3266999110aaedec6661c2479ca88416149e42024d035a1564f865ffeb04c14b4ea40852ef09db4d460e6a7cbc9603105a7ba5c8a1c0cb4ea8bfa508c17f2a7fd7601b9aaf09a85b130a717ca3f5517e8f74ced550b68ff4f0fa63546db377914a65a9781f6"
+      },
+      "expect": {
+        "out": {
+          "passed": false,
+          "scheme": "rsa",
+          "digestAlgorithm": null
+        }
+      }
+    },
+    {
+      "name": "signature numerically >= the modulus -> RSA_public_decrypt error; upstream walks its zero buffer into the same failure",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f"
+      },
+      "expect": {
+        "out": {
+          "passed": false,
+          "scheme": "rsa",
+          "digestAlgorithm": null
+        }
+      }
+    },
+    {
+      "name": "modulus smaller than hashLength+2 -> guarded failure (dart-only: upstream crashes on the negative range)",
+      "op": "aa.verify",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "dg15": "6f263024300d06092a864886f70d010101050003130030100209008362be355bdeb57f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "7091dbff8fb8d84f"
+      },
+      "expect": {
+        "out": {
+          "passed": false,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA1"
+        }
+      }
+    },
+    {
+      "name": "boundary: post-trailer length == hashLen+1 -> empty recovered message, still verifies (pins the small-modulus guard bound)",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f343032300d06092a864886f70d0101010500032100301e021700910da889389b596b55c5bc7893a920e8f5ee9642211f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "89f41c5fdce704351259b955ee507f73e1bdecea8d9b"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA1"
+        }
+      }
+    },
+    {
+      "name": "decrypted value has a leading zero byte (left-padding to RSA_size is required)",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f81a230819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001",
+        "challenge": "0011223344556677",
+        "signature": "25ee5cf1b5b415daa7dfe1e564c3fb86ee386e69803dc7b50a09b3772501a28fe5539a7f6f98b66a55f7108f8d7da936dda082d392cba881a476dc0eba1042ba39403dec029acdd507c8fc43e17f8afc497767163ef1a665b80a2ff4d25fe5e570da98687245b057884feb47d1984d34cd951f3ca3f1fadabc5ee2fd1b3fd745"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "rsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "ECDSA plain r||s, DG14 names ecdsa-plain-SHA1",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e1b311930170606678108010105020101060a04007f00070101040101",
+        "challenge": "0011223344556677",
+        "signature": "b62db72077f1b2c829398ce11611b3724b410026de3644a89427000d9f4ad3d4cd9cae7b3edc41684c91b84e7ddb78e337dce4a5b2f139b0a28e0f39b19a1167"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA1"
+        }
+      }
+    },
+    {
+      "name": "ECDSA plain r||s, DG14 names ecdsa-plain-SHA224",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e1b311930170606678108010105020101060a04007f00070101040102",
+        "challenge": "0011223344556677",
+        "signature": "f4b68e061d5f0a017acc75acac69dbe713a418ea2ae2763343366572fe6670b717ebf67ba66496096c29b48db0ba5031494d36549092b17f309cdf24db4ec94c"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA224"
+        }
+      }
+    },
+    {
+      "name": "ECDSA plain r||s, DG14 names ecdsa-plain-SHA256",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e1b311930170606678108010105020101060a04007f00070101040103",
+        "challenge": "0011223344556677",
+        "signature": "f4a97ccd2a559d3c111507deaff05118fac3c4a1f673a47b2f8fbf1825c78f9e83ce0f165d3c7118f77f0dfab8bea4d62f4bbd0379afbdcea61b02b30377e4d3"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "ECDSA plain r||s, DG14 names ecdsa-plain-SHA384",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e1b311930170606678108010105020101060a04007f00070101040104",
+        "challenge": "0011223344556677",
+        "signature": "89dbb296ded0cddeb29d87815c45a99398a70a893218a109c2b8a3f12a3658fe3376971c904b745155eac72884c4b67ec1b2fe58e7804136384fee918f000e52"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA384"
+        }
+      }
+    },
+    {
+      "name": "ECDSA plain r||s, DG14 names ecdsa-plain-SHA512",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e1b311930170606678108010105020101060a04007f00070101040105",
+        "challenge": "0011223344556677",
+        "signature": "c72c1e9a18fc60a207da51602251a8f3c2488ef80deeb88062294457d1874f8b7966cb9e68e15ddae1ba845e23973ae75aae05e5080468ac5e288efbad520b03"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA512"
+        }
+      }
+    },
+    {
+      "name": "ECDSA with no DG14 at all -> the SHA-256 default of the digest chain",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "challenge": "0011223344556677",
+        "signature": "f4a97ccd2a559d3c111507deaff05118fac3c4a1f673a47b2f8fbf1825c78f9e83ce0f165d3c7118f77f0dfab8bea4d62f4bbd0379afbdcea61b02b30377e4d3"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "ECDSA: DG14 carries an AA-info without a signature algorithm -> empty name -> SHA-256 default",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e0f310d300b0606678108010105020101",
+        "challenge": "0011223344556677",
+        "signature": "f4a97ccd2a559d3c111507deaff05118fac3c4a1f673a47b2f8fbf1825c78f9e83ce0f165d3c7118f77f0dfab8bea4d62f4bbd0379afbdcea61b02b30377e4d3"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "ECDSA: two AA-infos in DG14 -> the FIRST one selects the digest",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e34313230170606678108010105020101060a04007f0007010104010530170606678108010105020101060a04007f00070101040103",
+        "challenge": "0011223344556677",
+        "signature": "c72c1e9a18fc60a207da51602251a8f3c2488ef80deeb88062294457d1874f8b7966cb9e68e15ddae1ba845e23973ae75aae05e5080468ac5e288efbad520b03"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA512"
+        }
+      }
+    },
+    {
+      "name": "ecdsa-plain-RIPEMD160: legitimately signed, verified with the SHA-256 default -> always fails (preserved on both runners)",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e1b311930170606678108010105020101060a04007f00070101040106",
+        "challenge": "0011223344556677",
+        "signature": "1a7745caade79c45ab8fb3edd3a5b89690199db2e442ba1b1302fda9ace5847786d83be6553bec04e88b520817d7e19afcde4a1593d70e2eb67d3854bea8c9a1"
+      },
+      "expect": {
+        "out": {
+          "passed": false,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "ECDSA odd-length signature: the floor split drops the trailing byte, so a valid signature plus one junk byte still verifies",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e1b311930170606678108010105020101060a04007f00070101040103",
+        "challenge": "0011223344556677",
+        "signature": "f4a97ccd2a559d3c111507deaff05118fac3c4a1f673a47b2f8fbf1825c78f9e83ce0f165d3c7118f77f0dfab8bea4d62f4bbd0379afbdcea61b02b30377e4d35a"
+      },
+      "expect": {
+        "out": {
+          "passed": true,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "ECDSA: signature over a different challenge -> failed",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "dg14": "6e1b311930170606678108010105020101060a04007f00070101040103",
+        "challenge": "7766554433221100",
+        "signature": "f4a97ccd2a559d3c111507deaff05118fac3c4a1f673a47b2f8fbf1825c78f9e83ce0f165d3c7118f77f0dfab8bea4d62f4bbd0379afbdcea61b02b30377e4d3"
+      },
+      "expect": {
+        "out": {
+          "passed": false,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    },
+    {
+      "name": "keyless DG15 (unparseable body) -> the guard path: no scheme, failed",
+      "op": "aa.verify",
+      "input": {
+        "dg15": "6f03ffffff",
+        "challenge": "0011223344556677",
+        "signature": "f4a97ccd2a559d3c111507deaff05118fac3c4a1f673a47b2f8fbf1825c78f9e83ce0f165d3c7118f77f0dfab8bea4d62f4bbd0379afbdcea61b02b30377e4d3"
+      },
+      "expect": {
+        "out": {
+          "passed": false,
+          "scheme": null,
+          "digestAlgorithm": null
+        }
+      }
+    },
+    {
+      "name": "ECDSA with a zero-length signature -> failed (dart-only: upstream force-unwraps an empty buffer's base address)",
+      "op": "aa.verify",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+        "challenge": "0011223344556677",
+        "signature": ""
+      },
+      "expect": {
+        "out": {
+          "passed": false,
+          "scheme": "ecdsa",
+          "digestAlgorithm": "SHA256"
+        }
+      }
+    }
+  ]
+}

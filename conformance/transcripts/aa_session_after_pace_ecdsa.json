@@ -1,0 +1,130 @@
+{
+  "transcript": "aa_session_after_pace_ecdsa",
+  "schemaVersion": 1,
+  "description": "Active Authentication after PACE, prime256v1 DG15 key. PACE ECDH-GM-AES-CBC-CMAC-128 (App G.1 suite) establishes AES secure messaging with both ephemeral scalars injected; INTERNAL AUTHENTICATE then travels under it and the response is the chip's plain r||s signature. DG14 names ecdsa-plain-SHA256, so the digest chain selects SHA-256 rather than falling to its default by accident. runners omitted = both.",
+  "session": {
+    "secureMessaging": "pace",
+    "mrzKey": "L898902C<369080619406236",
+    "cardAccess": "31143012060a04007f0007020204020202010202010d",
+    "ephemeralKeys": {
+      "mappingKey": "7f4bcbd44e1a9fa87ba0ea25e0fbc8f9ac1e6a2cca3d5a6c8e0b1f3a5d7c9e0b",
+      "ephemeralKey": "5b6d7f9012a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d"
+    }
+  },
+  "drive": {
+    "op": "activeAuthentication",
+    "args": {
+      "dg15": "6f5b3059301306072a8648ce3d020106082a8648ce3d03010703420004b41b47281d2eb897438793d25c6007dec3221474222b68ccb4213f7bb1157aae66ab975b2eb3211f5e243e16305e036bec453c4e23236d23d3b60cbd8c747977",
+      "dg14": "6e1b311930170606678108010105020101060a04007f00070101040103",
+      "challenge": "0011223344556677"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "22",
+        "p1": "c1",
+        "p2": "a4",
+        "data": "800a04007f0007020204020283010184010d",
+        "le": -1
+      },
+      "wire": "0022c1a412800a04007f0007020204020283010184010d",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      },
+      "cmdFor": {
+        "swift": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f00070202040202830101",
+          "le": -1
+        }
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "wire": "10860000027c0000",
+      "resp": {
+        "data": "7c128010a13f9407601018109dc2d9dc8a1cc390",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c4381410416517d8f17a43a7b50a07eb95099367ae81577ace39cc8e980d274c2b2b39c6b6e1223f636e6c8d438340423f2412fa2f60752535ed7ec6790feef7eb13ce71b",
+        "le": 256
+      },
+      "wire": "10860000457c4381410416517d8f17a43a7b50a07eb95099367ae81577ace39cc8e980d274c2b2b39c6b6e1223f636e6c8d438340423f2412fa2f60752535ed7ec6790feef7eb13ce71b00",
+      "resp": {
+        "data": "7c43824104824fba91c9cbe26bef53a0ebe7342a3bf178cea9f45de0b70aa601651fba3f5730d8c879aaa9c9f73991e61b58f4d52eb87a0a0c709a49dc63719363ccd13c54",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c4383410457fa5403924f6524db93c119f3b8449d55baf6f77368c10aa0f764f6da3915ec166731e8c338f002ff08225395b1d9f84f366248c102a6b2ac3256986beef1f2",
+        "le": 256
+      },
+      "wire": "10860000457c4383410457fa5403924f6524db93c119f3b8449d55baf6f77368c10aa0f764f6da3915ec166731e8c338f002ff08225395b1d9f84f366248c102a6b2ac3256986beef1f200",
+      "resp": {
+        "data": "7c438441042abda35745abec29318a1d738185300393f68ac5ab42a996859717fb18682cf54b9f360f73c848e2c175a72ce0a619b99d2a360d0ed0fa1c24d11e4f1e877618",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c0a8508d4f911acc15d2cca",
+        "le": 256
+      },
+      "wire": "008600000c7c0a8508d4f911acc15d2cca00",
+      "resp": {
+        "data": "7c0a8608d817083b4d7b1964",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "88",
+        "p1": "00",
+        "p2": "00",
+        "data": "871101e14d810b28c75db30cd0e3e90ca3e2469701008e0875e5adfaf9d2d339",
+        "le": 256
+      },
+      "wire": "0c88000020871101e14d810b28c75db30cd0e3e90ca3e2469701008e0875e5adfaf9d2d33900",
+      "resp": {
+        "data": "8751011ce8f1b770ccf043f88be128fe2f225fb27d2d7618c925b539613b43634e6ce2b7dfb3293f92142535a8e200ffd96fa1ddc7cb48a5abfee54ca894e2d0d7dfba9d0897dec8d11520293359a53c082919990290008e083e9997819692a007",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": {
+      "passed": true,
+      "signature": "42f26bc8d5a9fb44d8449cd70ad7f733780acb3103b426171175d48a35869a4d0a0c4fa50828e6a8e7beae9bd7c100609442787e6bc0b5cc6a931a21c598b5ad"
+    }
+  }
+}

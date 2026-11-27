@@ -1,0 +1,1438 @@
+{
+  "suite": "tlv",
+  "schemaVersion": 1,
+  "description": "Foundations: byte/hex helpers, asn1Length/toAsn1Length, TlvRecord (TKBERTLVRecord replacement), wrapDO/unwrapDO, DER OID encoding, ISO 9797-1 method-2 padding.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "asn1Length 00 -> (0, 1)",
+      "op": "asn1Length",
+      "input": {
+        "data": "00"
+      },
+      "expect": {
+        "out": {
+          "length": 0,
+          "lengthBytes": 1
+        }
+      }
+    },
+    {
+      "name": "asn1Length 7f -> (127, 1)",
+      "op": "asn1Length",
+      "input": {
+        "data": "7f"
+      },
+      "expect": {
+        "out": {
+          "length": 127,
+          "lengthBytes": 1
+        }
+      }
+    },
+    {
+      "name": "asn1Length 8180 -> (128, 2)",
+      "op": "asn1Length",
+      "input": {
+        "data": "8180"
+      },
+      "expect": {
+        "out": {
+          "length": 128,
+          "lengthBytes": 2
+        }
+      }
+    },
+    {
+      "name": "asn1Length 81ff -> (255, 2)",
+      "op": "asn1Length",
+      "input": {
+        "data": "81ff"
+      },
+      "expect": {
+        "out": {
+          "length": 255,
+          "lengthBytes": 2
+        }
+      }
+    },
+    {
+      "name": "asn1Length 820100 -> (256, 3)",
+      "op": "asn1Length",
+      "input": {
+        "data": "820100"
+      },
+      "expect": {
+        "out": {
+          "length": 256,
+          "lengthBytes": 3
+        }
+      }
+    },
+    {
+      "name": "asn1Length 82ffff -> (65535, 3)",
+      "op": "asn1Length",
+      "input": {
+        "data": "82ffff"
+      },
+      "expect": {
+        "out": {
+          "length": 65535,
+          "lengthBytes": 3
+        }
+      }
+    },
+    {
+      "name": "asn1Length ignores trailing garbage",
+      "op": "asn1Length",
+      "input": {
+        "data": "05ffffffff"
+      },
+      "expect": {
+        "out": {
+          "length": 5,
+          "lengthBytes": 1
+        }
+      }
+    },
+    {
+      "name": "asn1Length rejects indefinite form 0x80",
+      "op": "asn1Length",
+      "input": {
+        "data": "80"
+      },
+      "expect": {
+        "error": "CannotDecodeASN1Length"
+      }
+    },
+    {
+      "name": "asn1Length rejects 0x83 three-byte form",
+      "op": "asn1Length",
+      "input": {
+        "data": "83010000"
+      },
+      "expect": {
+        "error": "CannotDecodeASN1Length"
+      }
+    },
+    {
+      "name": "asn1Length truncated 0x82 throws (upstream crashes)",
+      "op": "asn1Length",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "8201"
+      },
+      "expect": {
+        "error": "CannotDecodeASN1Length"
+      }
+    },
+    {
+      "name": "asn1Length truncated 0x81 throws (upstream crashes)",
+      "op": "asn1Length",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "81"
+      },
+      "expect": {
+        "error": "CannotDecodeASN1Length"
+      }
+    },
+    {
+      "name": "asn1Length empty input throws (upstream crashes)",
+      "op": "asn1Length",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": ""
+      },
+      "expect": {
+        "error": "CannotDecodeASN1Length"
+      }
+    },
+    {
+      "name": "toAsn1Length 0 -> 00",
+      "op": "toAsn1Length",
+      "input": {
+        "length": 0
+      },
+      "expect": {
+        "out": {
+          "data": "00"
+        }
+      }
+    },
+    {
+      "name": "toAsn1Length 127 -> 7f",
+      "op": "toAsn1Length",
+      "input": {
+        "length": 127
+      },
+      "expect": {
+        "out": {
+          "data": "7f"
+        }
+      }
+    },
+    {
+      "name": "toAsn1Length 128 -> 8180",
+      "op": "toAsn1Length",
+      "input": {
+        "length": 128
+      },
+      "expect": {
+        "out": {
+          "data": "8180"
+        }
+      }
+    },
+    {
+      "name": "toAsn1Length 255 -> 81ff",
+      "op": "toAsn1Length",
+      "input": {
+        "length": 255
+      },
+      "expect": {
+        "out": {
+          "data": "81ff"
+        }
+      }
+    },
+    {
+      "name": "toAsn1Length 256 -> 820100",
+      "op": "toAsn1Length",
+      "input": {
+        "length": 256
+      },
+      "expect": {
+        "out": {
+          "data": "820100"
+        }
+      }
+    },
+    {
+      "name": "toAsn1Length 65535 -> 82ffff",
+      "op": "toAsn1Length",
+      "input": {
+        "length": 65535
+      },
+      "expect": {
+        "out": {
+          "data": "82ffff"
+        }
+      }
+    },
+    {
+      "name": "toAsn1Length 65536 exceeds cap",
+      "op": "toAsn1Length",
+      "input": {
+        "length": 65536
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "toAsn1Length -1 throws (upstream emits garbage)",
+      "op": "toAsn1Length",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "length": -1
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "tlvRecord encode (0x80, empty) -> 80 00",
+      "op": "tlvRecord.encode",
+      "input": {
+        "tag": "80",
+        "value": ""
+      },
+      "expect": {
+        "out": {
+          "data": "8000"
+        }
+      }
+    },
+    {
+      "name": "tlvRecord encode two-byte tag 0x7F49",
+      "op": "tlvRecord.encode",
+      "input": {
+        "tag": "7f49",
+        "value": "aa"
+      },
+      "expect": {
+        "out": {
+          "data": "7f4901aa"
+        }
+      }
+    },
+    {
+      "name": "tlvRecord fromRecords PACE shape 7F49 { 06 oid, 86 pubkey }",
+      "op": "tlvRecord.fromRecords",
+      "input": {
+        "tag": "7f49",
+        "records": [
+          {
+            "tag": "06",
+            "value": "04007f00070202040202"
+          },
+          {
+            "tag": "86",
+            "value": "0405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f4041424344"
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "data": "7f494f060a04007f0007020204020286410405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f4041424344"
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse 80 00 round-trip",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "8000"
+      },
+      "expect": {
+        "out": {
+          "record": {
+            "tag": "80",
+            "value": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse two-byte tag round-trip",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "7f4901aa"
+      },
+      "expect": {
+        "out": {
+          "record": {
+            "tag": "7f49",
+            "value": "aa"
+          }
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse PACE shape round-trip",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "7f494f060a04007f0007020204020286410405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f4041424344"
+      },
+      "expect": {
+        "out": {
+          "record": {
+            "tag": "7f49",
+            "value": "060a04007f0007020204020286410405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f4041424344"
+          }
+        }
+      }
+    },
+    {
+      "name": "tlvRecord sequenceOfRecords over PACE 7C-wrapped response",
+      "op": "tlvRecord.sequenceOfRecords",
+      "input": {
+        "data": "7c0c8004aabbccdd8104deadbeef"
+      },
+      "expect": {
+        "out": {
+          "records": [
+            {
+              "tag": "7c",
+              "value": "8004aabbccdd8104deadbeef"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "tlvRecord sequenceOfRecords over 7C value (two records)",
+      "op": "tlvRecord.sequenceOfRecords",
+      "input": {
+        "data": "8004aabbccdd8104deadbeef"
+      },
+      "expect": {
+        "out": {
+          "records": [
+            {
+              "tag": "80",
+              "value": "aabbccdd"
+            },
+            {
+              "tag": "81",
+              "value": "deadbeef"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "tlvRecord sequenceOfRecords empty input -> []",
+      "op": "tlvRecord.sequenceOfRecords",
+      "input": {
+        "data": ""
+      },
+      "expect": {
+        "out": {
+          "records": []
+        }
+      }
+    },
+    {
+      "name": "tlvRecord sequenceOfRecords truncated -> null",
+      "op": "tlvRecord.sequenceOfRecords",
+      "input": {
+        "data": "8004aabbccdd8104deadbeef8102aa"
+      },
+      "expect": {
+        "out": {
+          "records": null
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse length form 0x81 (129 bytes)",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "8781810102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f8081"
+      },
+      "expect": {
+        "out": {
+          "record": {
+            "tag": "87",
+            "value": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f8081"
+          }
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse length form 0x82 (256 bytes)",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "8782010002030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff0001"
+      },
+      "expect": {
+        "out": {
+          "record": {
+            "tag": "87",
+            "value": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff0001"
+          }
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse length form 0x83 (non-minimal BER, 256 bytes)",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "878300010002030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff0001"
+      },
+      "expect": {
+        "out": {
+          "record": {
+            "tag": "87",
+            "value": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff0001"
+          }
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse length form 0x84 (non-minimal BER, 256 bytes)",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "87840000010002030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff0001"
+      },
+      "expect": {
+        "out": {
+          "record": {
+            "tag": "87",
+            "value": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff0001"
+          }
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse rejects length form 0x85 (dart): port stops at 0x84",
+      "op": "tlvRecord.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "87850000000001aa"
+      },
+      "expect": {
+        "out": {
+          "record": null
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse accepts length form 0x85 (swift): TKBERTLVRecord takes longer length forms",
+      "op": "tlvRecord.parse",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "87850000000001aa"
+      },
+      "expect": {
+        "out": {
+          "record": {
+            "tag": "87",
+            "value": "aa"
+          }
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse rejects indefinite length 0x80",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "8780aabb0000"
+      },
+      "expect": {
+        "out": {
+          "record": null
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse truncated value -> null",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "8705aabb"
+      },
+      "expect": {
+        "out": {
+          "record": null
+        }
+      }
+    },
+    {
+      "name": "tlvRecord parse truncated multi-byte tag -> null",
+      "op": "tlvRecord.parse",
+      "input": {
+        "data": "7f"
+      },
+      "expect": {
+        "out": {
+          "record": null
+        }
+      }
+    },
+    {
+      "name": "wrapDO 0x87 value size 1",
+      "op": "wrapDO",
+      "input": {
+        "tag": "87",
+        "value": "01"
+      },
+      "expect": {
+        "out": {
+          "data": "870101"
+        }
+      }
+    },
+    {
+      "name": "unwrapDO 0x87 value size 1 round-trip",
+      "op": "unwrapDO",
+      "input": {
+        "tag": "87",
+        "data": "870101"
+      },
+      "expect": {
+        "out": {
+          "value": "01"
+        }
+      }
+    },
+    {
+      "name": "wrapDO 0x87 value size 127",
+      "op": "wrapDO",
+      "input": {
+        "tag": "87",
+        "value": "7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfd"
+      },
+      "expect": {
+        "out": {
+          "data": "877f7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfd"
+        }
+      }
+    },
+    {
+      "name": "unwrapDO 0x87 value size 127 round-trip",
+      "op": "unwrapDO",
+      "input": {
+        "tag": "87",
+        "data": "877f7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfd"
+      },
+      "expect": {
+        "out": {
+          "value": "7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfd"
+        }
+      }
+    },
+    {
+      "name": "wrapDO 0x87 value size 128",
+      "op": "wrapDO",
+      "input": {
+        "tag": "87",
+        "value": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+      },
+      "expect": {
+        "out": {
+          "data": "878180808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+        }
+      }
+    },
+    {
+      "name": "unwrapDO 0x87 value size 128 round-trip",
+      "op": "unwrapDO",
+      "input": {
+        "tag": "87",
+        "data": "878180808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+      },
+      "expect": {
+        "out": {
+          "value": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+        }
+      }
+    },
+    {
+      "name": "wrapDO 0x87 value size 256",
+      "op": "wrapDO",
+      "input": {
+        "tag": "87",
+        "value": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+      },
+      "expect": {
+        "out": {
+          "data": "87820100000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+        }
+      }
+    },
+    {
+      "name": "unwrapDO 0x87 value size 256 round-trip",
+      "op": "unwrapDO",
+      "input": {
+        "tag": "87",
+        "data": "87820100000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+      },
+      "expect": {
+        "out": {
+          "value": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+        }
+      }
+    },
+    {
+      "name": "unwrapDO tag mismatch throws",
+      "op": "unwrapDO",
+      "input": {
+        "tag": "87",
+        "data": "850101"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "oid encode 0.4.0.127.0.7.2.2.4.2.2",
+      "op": "oid.encode",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2"
+      },
+      "expect": {
+        "out": {
+          "data": "060a04007f00070202040202"
+        }
+      }
+    },
+    {
+      "name": "oid encode 0.4.0.127.0.7.2.2.4.1.2",
+      "op": "oid.encode",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.1.2"
+      },
+      "expect": {
+        "out": {
+          "data": "060a04007f00070202040102"
+        }
+      }
+    },
+    {
+      "name": "oid encode 0.4.0.127.0.7.2.2.4.4.2",
+      "op": "oid.encode",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.4.2"
+      },
+      "expect": {
+        "out": {
+          "data": "060a04007f00070202040402"
+        }
+      }
+    },
+    {
+      "name": "oid encode 0.4.0.127.0.7.2.2.4.6.2",
+      "op": "oid.encode",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.6.2"
+      },
+      "expect": {
+        "out": {
+          "data": "060a04007f00070202040602"
+        }
+      }
+    },
+    {
+      "name": "oid encode 1.2.840.10045.2.1",
+      "op": "oid.encode",
+      "input": {
+        "oid": "1.2.840.10045.2.1"
+      },
+      "expect": {
+        "out": {
+          "data": "06072a8648ce3d0201"
+        }
+      }
+    },
+    {
+      "name": "oid encode 2.100.3",
+      "op": "oid.encode",
+      "input": {
+        "oid": "2.100.3"
+      },
+      "expect": {
+        "out": {
+          "data": "0603813403"
+        }
+      }
+    },
+    {
+      "name": "oid encode 0.4.127",
+      "op": "oid.encode",
+      "input": {
+        "oid": "0.4.127"
+      },
+      "expect": {
+        "out": {
+          "data": "0602047f"
+        }
+      }
+    },
+    {
+      "name": "oid encode 0.4.128",
+      "op": "oid.encode",
+      "input": {
+        "oid": "0.4.128"
+      },
+      "expect": {
+        "out": {
+          "data": "0603048100"
+        }
+      }
+    },
+    {
+      "name": "oid toBytes replaceTag leading 0x80",
+      "op": "oid.toBytes",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2",
+        "replaceTag": true
+      },
+      "expect": {
+        "out": {
+          "data": "800a04007f00070202040202"
+        }
+      }
+    },
+    {
+      "name": "oid toBytes without replaceTag keeps 0x06",
+      "op": "oid.toBytes",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2",
+        "replaceTag": false
+      },
+      "expect": {
+        "out": {
+          "data": "060a04007f00070202040202"
+        }
+      }
+    },
+    {
+      "name": "oid decode round-trip 0.4.0.127.0.7.2.2.4.2.2 (dart-only addition)",
+      "op": "oid.decode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "060a04007f00070202040202"
+      },
+      "expect": {
+        "out": {
+          "oid": "0.4.0.127.0.7.2.2.4.2.2"
+        }
+      }
+    },
+    {
+      "name": "oid decode round-trip 2.100.3 (dart-only addition)",
+      "op": "oid.decode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "0603813403"
+      },
+      "expect": {
+        "out": {
+          "oid": "2.100.3"
+        }
+      }
+    },
+    {
+      "name": "oid decode round-trip 0.4.128 (dart-only addition)",
+      "op": "oid.decode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "0603048100"
+      },
+      "expect": {
+        "out": {
+          "oid": "0.4.128"
+        }
+      }
+    },
+    {
+      "name": "oid decode wrong tag throws (dart-only addition)",
+      "op": "oid.decode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "0503aabbcc"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "pad empty input, block 8",
+      "op": "pad",
+      "input": {
+        "data": "",
+        "blockSize": 8
+      },
+      "expect": {
+        "out": {
+          "data": "8000000000000000"
+        }
+      }
+    },
+    {
+      "name": "pad partial block, block 8",
+      "op": "pad",
+      "input": {
+        "data": "aabb",
+        "blockSize": 8
+      },
+      "expect": {
+        "out": {
+          "data": "aabb800000000000"
+        }
+      }
+    },
+    {
+      "name": "pad aligned input appends full extra block, block 8",
+      "op": "pad",
+      "input": {
+        "data": "1011121314151617",
+        "blockSize": 8
+      },
+      "expect": {
+        "out": {
+          "data": "10111213141516178000000000000000"
+        }
+      }
+    },
+    {
+      "name": "pad partial block, block 16",
+      "op": "pad",
+      "input": {
+        "data": "aabbcc",
+        "blockSize": 16
+      },
+      "expect": {
+        "out": {
+          "data": "aabbcc80000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "pad aligned input appends full extra block, block 16",
+      "op": "pad",
+      "input": {
+        "data": "202122232425262728292a2b2c2d2e2f",
+        "blockSize": 16
+      },
+      "expect": {
+        "out": {
+          "data": "202122232425262728292a2b2c2d2e2f80000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "unpad round-trip partial block",
+      "op": "unpad",
+      "input": {
+        "data": "aabb800000000000"
+      },
+      "expect": {
+        "out": {
+          "data": "aabb"
+        }
+      }
+    },
+    {
+      "name": "unpad round-trip full padding block",
+      "op": "unpad",
+      "input": {
+        "data": "8000000000000000"
+      },
+      "expect": {
+        "out": {
+          "data": ""
+        }
+      }
+    },
+    {
+      "name": "unpad 0x80 as last byte",
+      "op": "unpad",
+      "input": {
+        "data": "aabb80"
+      },
+      "expect": {
+        "out": {
+          "data": "aabb"
+        }
+      }
+    },
+    {
+      "name": "unpad no-padding passthrough keeps zeros",
+      "op": "unpad",
+      "input": {
+        "data": "aabb0000"
+      },
+      "expect": {
+        "out": {
+          "data": "aabb0000"
+        }
+      }
+    },
+    {
+      "name": "unpad no-padding passthrough",
+      "op": "unpad",
+      "input": {
+        "data": "aabbcc"
+      },
+      "expect": {
+        "out": {
+          "data": "aabbcc"
+        }
+      }
+    },
+    {
+      "name": "unpad empty input throws (upstream crashes)",
+      "op": "unpad",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": ""
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "unpad all-zero input throws (upstream crashes)",
+      "op": "unpad",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "0000"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "hexRepToBin even-length input",
+      "op": "hexRepToBin",
+      "input": {
+        "hex": "aabb"
+      },
+      "expect": {
+        "out": {
+          "data": "aabb"
+        }
+      }
+    },
+    {
+      "name": "hexRepToBin uppercase input",
+      "op": "hexRepToBin",
+      "input": {
+        "hex": "AABB"
+      },
+      "expect": {
+        "out": {
+          "data": "aabb"
+        }
+      }
+    },
+    {
+      "name": "hexRepToBin odd-length lone digit becomes a byte",
+      "op": "hexRepToBin",
+      "input": {
+        "hex": "abc"
+      },
+      "expect": {
+        "out": {
+          "data": "ab0c"
+        }
+      }
+    },
+    {
+      "name": "intToBin 4 pad 2",
+      "op": "intToBin",
+      "input": {
+        "value": 4,
+        "pad": 2
+      },
+      "expect": {
+        "out": {
+          "data": "04"
+        }
+      }
+    },
+    {
+      "name": "intToBin 255 pad 2",
+      "op": "intToBin",
+      "input": {
+        "value": 255,
+        "pad": 2
+      },
+      "expect": {
+        "out": {
+          "data": "ff"
+        }
+      }
+    },
+    {
+      "name": "intToBin 256 pad 4",
+      "op": "intToBin",
+      "input": {
+        "value": 256,
+        "pad": 4
+      },
+      "expect": {
+        "out": {
+          "data": "0100"
+        }
+      }
+    },
+    {
+      "name": "intToBin 300 pad 2: upstream odd-width mangling",
+      "op": "intToBin",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "value": 300,
+        "pad": 2
+      },
+      "expect": {
+        "out": {
+          "data": "120c"
+        }
+      }
+    },
+    {
+      "name": "intToBin 300 pad 2: even-width fix",
+      "op": "intToBin",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "value": 300,
+        "pad": 2
+      },
+      "expect": {
+        "out": {
+          "data": "012c"
+        }
+      }
+    },
+    {
+      "name": "intToBin 74565 pad 4: upstream odd-width mangling",
+      "op": "intToBin",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "value": 74565,
+        "pad": 4
+      },
+      "expect": {
+        "out": {
+          "data": "123405"
+        }
+      }
+    },
+    {
+      "name": "intToBin 74565 pad 4: even-width fix",
+      "op": "intToBin",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "value": 74565,
+        "pad": 4
+      },
+      "expect": {
+        "out": {
+          "data": "012345"
+        }
+      }
+    },
+    {
+      "name": "binToInt single byte",
+      "op": "binToInt",
+      "input": {
+        "data": "ff"
+      },
+      "expect": {
+        "out": {
+          "value": 255
+        }
+      }
+    },
+    {
+      "name": "binToInt two bytes",
+      "op": "binToInt",
+      "input": {
+        "data": "0100"
+      },
+      "expect": {
+        "out": {
+          "value": 256
+        }
+      }
+    },
+    {
+      "name": "binToInt four bytes",
+      "op": "binToInt",
+      "input": {
+        "data": "deadbeef"
+      },
+      "expect": {
+        "out": {
+          "value": 3735928559
+        }
+      }
+    },
+    {
+      "name": "binToInt seven bytes",
+      "op": "binToInt",
+      "input": {
+        "data": "01020304050607"
+      },
+      "expect": {
+        "out": {
+          "value": 283686952306183
+        }
+      }
+    },
+    {
+      "name": "binToInt 8 bytes top-bit-clear: upstream succeeds",
+      "op": "binToInt",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "0123456789abcdef"
+      },
+      "expect": {
+        "out": {
+          "value": 81985529216486895
+        }
+      }
+    },
+    {
+      "name": "binToInt 8 bytes top-bit-clear: port guard rejects",
+      "op": "binToInt",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "0123456789abcdef"
+      },
+      "expect": {
+        "error": "ArgumentError"
+      }
+    },
+    {
+      "name": "binToInt 9 bytes throws (upstream crashes)",
+      "op": "binToInt",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "010203040506070809"
+      },
+      "expect": {
+        "error": "ArgumentError"
+      }
+    },
+    {
+      "name": "binToInt 8 bytes top-bit-set throws (upstream Int64 overflow crash)",
+      "op": "binToInt",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "ffffffffffffffff"
+      },
+      "expect": {
+        "error": "ArgumentError"
+      }
+    },
+    {
+      "name": "binToHexBytes four bytes",
+      "op": "binToHexBytes",
+      "input": {
+        "data": "deadbeef"
+      },
+      "expect": {
+        "out": {
+          "value": 3735928559
+        }
+      }
+    },
+    {
+      "name": "binToHexBytes 8 bytes top-bit-clear: upstream succeeds",
+      "op": "binToHexBytes",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "0123456789abcdef"
+      },
+      "expect": {
+        "out": {
+          "value": 81985529216486895
+        }
+      }
+    },
+    {
+      "name": "binToHexBytes 8 bytes top-bit-clear: port guard rejects",
+      "op": "binToHexBytes",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "0123456789abcdef"
+      },
+      "expect": {
+        "error": "ArgumentError"
+      }
+    },
+    {
+      "name": "binToHexBytes 9 bytes throws (upstream crashes)",
+      "op": "binToHexBytes",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "010203040506070809"
+      },
+      "expect": {
+        "error": "ArgumentError"
+      }
+    },
+    {
+      "name": "intToBytes 0x1234 removePadding",
+      "op": "intToBytes",
+      "input": {
+        "value": 4660,
+        "removePadding": true
+      },
+      "expect": {
+        "out": {
+          "data": "1234"
+        }
+      }
+    },
+    {
+      "name": "intToBytes 0x1234 keeps 8-byte padding",
+      "op": "intToBytes",
+      "input": {
+        "value": 4660,
+        "removePadding": false
+      },
+      "expect": {
+        "out": {
+          "data": "0000000000001234"
+        }
+      }
+    },
+    {
+      "name": "intToBytes 0 -> [0]",
+      "op": "intToBytes",
+      "input": {
+        "value": 0,
+        "removePadding": true
+      },
+      "expect": {
+        "out": {
+          "data": "00"
+        }
+      }
+    },
+    {
+      "name": "intToBytes negative throws (dart-only guard)",
+      "op": "intToBytes",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "value": -1,
+        "removePadding": true
+      },
+      "expect": {
+        "error": "ArgumentError"
+      }
+    },
+    {
+      "name": "xor equal-length inputs",
+      "op": "xor",
+      "input": {
+        "a": "0f0f",
+        "b": "f0f0"
+      },
+      "expect": {
+        "out": {
+          "data": "ffff"
+        }
+      }
+    },
+    {
+      "name": "xor kifd/kicc-style 16 bytes",
+      "op": "xor",
+      "input": {
+        "a": "303132333435363738393a3b3c3d3e3f",
+        "b": "a5a6a7a8a9aaabacadaeafb0b1b2b3b4"
+      },
+      "expect": {
+        "out": {
+          "data": "9597959b9d9f9d9b9597958b8d8f8d8b"
+        }
+      }
+    },
+    {
+      "name": "xor longer b silently truncates to a.length (quirk)",
+      "op": "xor",
+      "input": {
+        "a": "0102",
+        "b": "ffffee"
+      },
+      "expect": {
+        "out": {
+          "data": "fefd"
+        }
+      }
+    },
+    {
+      "name": "xor shorter b throws (upstream crashes)",
+      "op": "xor",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "a": "010203",
+        "b": "ffff"
+      },
+      "expect": {
+        "error": "ArgumentError"
+      }
+    },
+    {
+      "name": "binToHexRep uppercase format",
+      "op": "binToHexRep",
+      "input": {
+        "data": "aabbcc",
+        "asArray": false
+      },
+      "expect": {
+        "out": {
+          "rep": "AABBCC"
+        }
+      }
+    },
+    {
+      "name": "binToHexRep asArray log format (pinned for log diffing)",
+      "op": "binToHexRep",
+      "input": {
+        "data": "aabbcc",
+        "asArray": true
+      },
+      "expect": {
+        "out": {
+          "rep": "[0xaa, 0xbb, 0xcc, ]"
+        }
+      }
+    },
+    {
+      "name": "binToHexRep empty input",
+      "op": "binToHexRep",
+      "input": {
+        "data": "",
+        "asArray": false
+      },
+      "expect": {
+        "out": {
+          "rep": ""
+        }
+      }
+    },
+    {
+      "name": "binToHexRep empty input asArray",
+      "op": "binToHexRep",
+      "input": {
+        "data": "",
+        "asArray": true
+      },
+      "expect": {
+        "out": {
+          "rep": "[]"
+        }
+      }
+    }
+  ]
+}

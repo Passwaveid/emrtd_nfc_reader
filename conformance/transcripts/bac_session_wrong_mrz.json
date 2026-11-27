@@ -1,0 +1,48 @@
+{
+  "transcript": "bac_session_wrong_mrz",
+  "schemaVersion": 1,
+  "description": "Chip rejects EXTERNAL AUTHENTICATE with 63 00 (fielded wrong-MRZ convention) -> InvalidMRZKey on both sides, via different routes: dart throws in send(), whose status check is corrected; upstream's && status check let 63 00 through and the empty-data guard in performBACAndGetSessionKeys threw instead. Same steps, same final error - one shared fixture.",
+  "session": {
+    "secureMessaging": "bac",
+    "mrzKey": "L898902C<369080619406236",
+    "rng": "781723860c06c2260b795240cb7049b01c19b33e32804f0b"
+  },
+  "drive": {
+    "op": "none"
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "wire": "0084000008",
+      "resp": {
+        "data": "4608f91988702212",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "82",
+        "p1": "00",
+        "p2": "00",
+        "data": "72c29c2371cc9bdb65b779b8e8d37b29ecc154aa56a8799fae2f498f76ed92f25f1448eea8ad90a7",
+        "le": 256
+      },
+      "wire": "008200002872c29c2371cc9bdb65b779b8e8d37b29ecc154aa56a8799fae2f498f76ed92f25f1448eea8ad90a700",
+      "resp": {
+        "data": "",
+        "sw": "6300"
+      }
+    }
+  ],
+  "expect": {
+    "error": "InvalidMRZKey"
+  }
+}

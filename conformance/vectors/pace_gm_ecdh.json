@@ -1,0 +1,291 @@
+{
+  "suite": "pace_gm_ecdh",
+  "schemaVersion": 1,
+  "description": "PACE ECDH Generic Mapping (the only mapping upstream completes end-to-end). Per-step ops from ICAO 9303 Part 11 App G.1 (Brainpool P-256, AES-128): the 7F49 encodePublicKey TLV, the 8-byte truncated CMAC authentication token, OID dispatch, getParameterSpec, and the MSE:Set AT encode split (swift omits DO84 / dart emits it when a parameterId is present). AES-256 + 3DES token cases are port-generated frozen-reference (S3-confirmed) covering dmrtd's AES-256+Brainpool blind spot. The mapping-point math (H, Ĝ, shared-secret x) lives in ec_dh.json; the full-session byte pin lives in transcripts/pace_session_ecdh_gm_aes128.json.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "App G.1 encodePublicKey T_IFD (over chip ephemeral pub, tag 86)",
+      "op": "pace.encodePublicKey",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2",
+        "key": {
+          "kind": "ec",
+          "curve": "brainpoolp256r1",
+          "point": "049e880f842905b8b3181f7af7caa9f0efb743847f44a306d2d28c1d9ec65df6db7764b22277a2eddc3c265a9f018f9cb852e111b768b326904b59a0193776f094"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "7f494f060a04007f000702020402028641049e880f842905b8b3181f7af7caa9f0efb743847f44a306d2d28c1d9ec65df6db7764b22277a2eddc3c265a9f018f9cb852e111b768b326904b59a0193776f094"
+        }
+      }
+    },
+    {
+      "name": "App G.1 encodePublicKey T_IC (over terminal ephemeral pub, tag 86)",
+      "op": "pace.encodePublicKey",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2",
+        "key": {
+          "kind": "ec",
+          "curve": "brainpoolp256r1",
+          "point": "042db7a64c0355044ec9df190514c625cba2cea48754887122f3a5ef0d5edd301c3556f3b3b186df10b857b58f6a7eb80f20ba5dc7be1d43d9bf850149fbb36462"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "7f494f060a04007f000702020402028641042db7a64c0355044ec9df190514c625cba2cea48754887122f3a5ef0d5edd301c3556f3b3b186df10b857b58f6a7eb80f20ba5dc7be1d43d9bf850149fbb36462"
+        }
+      }
+    },
+    {
+      "name": "App G.1 authentication token T_IFD == C2B0BD78D94BA866",
+      "op": "pace.generateAuthenticationToken",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2",
+        "cipherAlg": "AES",
+        "key": {
+          "kind": "ec",
+          "curve": "brainpoolp256r1",
+          "point": "049e880f842905b8b3181f7af7caa9f0efb743847f44a306d2d28c1d9ec65df6db7764b22277a2eddc3c265a9f018f9cb852e111b768b326904b59a0193776f094"
+        },
+        "macKey": "fe251c7858b356b24514b3bd5f4297d1"
+      },
+      "expect": {
+        "out": {
+          "token": "c2b0bd78d94ba866"
+        }
+      }
+    },
+    {
+      "name": "App G.1 authentication token T_IC == 3ABB9674BCE93C08",
+      "op": "pace.generateAuthenticationToken",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2",
+        "cipherAlg": "AES",
+        "key": {
+          "kind": "ec",
+          "curve": "brainpoolp256r1",
+          "point": "042db7a64c0355044ec9df190514c625cba2cea48754887122f3a5ef0d5edd301c3556f3b3b186df10b857b58f6a7eb80f20ba5dc7be1d43d9bf850149fbb36462"
+        },
+        "macKey": "fe251c7858b356b24514b3bd5f4297d1"
+      },
+      "expect": {
+        "out": {
+          "token": "3abb9674bce93c08"
+        }
+      }
+    },
+    {
+      "name": "AES-256 + Brainpool P-256 token (frozen-reference, dmrtd's blind spot)",
+      "op": "pace.generateAuthenticationToken",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.4",
+        "cipherAlg": "AES",
+        "key": {
+          "kind": "ec",
+          "curve": "brainpoolp256r1",
+          "point": "049e880f842905b8b3181f7af7caa9f0efb743847f44a306d2d28c1d9ec65df6db7764b22277a2eddc3c265a9f018f9cb852e111b768b326904b59a0193776f094"
+        },
+        "macKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      },
+      "expect": {
+        "out": {
+          "token": "2014bd9e41cdbfbc"
+        }
+      }
+    },
+    {
+      "name": "3DES (DESede) token pads the encoding to block size 8 before MAC (frozen-reference)",
+      "op": "pace.generateAuthenticationToken",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.1",
+        "cipherAlg": "DESede",
+        "key": {
+          "kind": "ec",
+          "curve": "brainpoolp256r1",
+          "point": "049e880f842905b8b3181f7af7caa9f0efb743847f44a306d2d28c1d9ec65df6db7764b22277a2eddc3c265a9f018f9cb852e111b768b326904b59a0193776f094"
+        },
+        "macKey": "00112233445566778899aabbccddeeff"
+      },
+      "expect": {
+        "out": {
+          "token": "6f04ac333de309cb"
+        }
+      }
+    },
+    {
+      "name": "OID dispatch id-PACE-ECDH-GM-AES-CBC-CMAC-128",
+      "op": "paceInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2"
+      },
+      "expect": {
+        "out": {
+          "mappingType": "GM",
+          "keyAgreementAlgorithm": "ECDH",
+          "cipherAlgorithm": "AES",
+          "digestAlgorithm": "SHA-1",
+          "keyLength": 128
+        }
+      }
+    },
+    {
+      "name": "OID dispatch id-PACE-ECDH-GM-3DES-CBC-CBC",
+      "op": "paceInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.1"
+      },
+      "expect": {
+        "out": {
+          "mappingType": "GM",
+          "keyAgreementAlgorithm": "ECDH",
+          "cipherAlgorithm": "DESede",
+          "digestAlgorithm": "SHA-1",
+          "keyLength": 128
+        }
+      }
+    },
+    {
+      "name": "OID dispatch id-PACE-ECDH-GM-AES-CBC-CMAC-256",
+      "op": "paceInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.4"
+      },
+      "expect": {
+        "out": {
+          "mappingType": "GM",
+          "keyAgreementAlgorithm": "ECDH",
+          "cipherAlgorithm": "AES",
+          "digestAlgorithm": "SHA-256",
+          "keyLength": 256
+        }
+      }
+    },
+    {
+      "name": "getParameterSpec paramId 13 -> Brainpool P-256",
+      "op": "paceInfo.parameterSpec",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "parameterId": 13
+      },
+      "expect": {
+        "out": {
+          "kind": "ec",
+          "curve": "brainpoolp256r1"
+        }
+      }
+    },
+    {
+      "name": "getParameterSpec paramId 12 -> NIST P-256",
+      "op": "paceInfo.parameterSpec",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "parameterId": 12
+      },
+      "expect": {
+        "out": {
+          "kind": "ec",
+          "curve": "secp256r1"
+        }
+      }
+    },
+    {
+      "name": "getParameterSpec invalid paramId -> InvalidDataPassed (typo message preserved)",
+      "op": "paceInfo.parameterSpec",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "parameterId": 3
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "getParameterSpec absent paramId -> InvalidDataPassed (-1 sentinel)",
+      "op": "paceInfo.parameterSpec",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "parameterId": null
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "MSE:Set AT without DO84 matches App G.1 (both runners)",
+      "op": "apdu.commandBuild",
+      "input": {
+        "method": "sendMSESetATMutualAuth",
+        "args": {
+          "oid": "0.4.0.127.0.7.2.2.4.2.2",
+          "keyType": 1
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f00070202040202830101",
+          "le": -1
+        }
+      }
+    },
+    {
+      "name": "MSE:Set AT emits DO84 when parameterId present (dart)",
+      "op": "apdu.commandBuild",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "method": "sendMSESetATMutualAuth",
+        "args": {
+          "oid": "0.4.0.127.0.7.2.2.4.2.2",
+          "keyType": 1,
+          "parameterId": 13
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f0007020204020283010184010d",
+          "le": -1
+        }
+      }
+    }
+  ]
+}

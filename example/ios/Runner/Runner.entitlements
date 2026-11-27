@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- eMRTD chip reading: the CoreNFC tag-reading session capability.
+	     This file only makes the Xcode project correct. Reading a chip on a
+	     device ALSO needs "Near Field Communication Tag Reading" enabled on
+	     the App ID in the Apple developer portal, and the provisioning
+	     profiles regenerated afterwards. Without that, the build signs but
+	     the reader session fails at run time. -->
+	<key>com.apple.developer.nfc.readersession.formats</key>
+	<array>
+		<string>TAG</string>
+	</array>
+</dict>
+</plist>

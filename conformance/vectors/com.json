@@ -1,0 +1,331 @@
+{
+  "suite": "com",
+  "schemaVersion": 1,
+  "description": "EF.COM parsing: version strings, tag-list leniency, over-long bodies, hash() names, and the truncated-file set",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "EF.COM happy path: versions + tag list incl. Common/SecurityData naming",
+      "op": "com.parse",
+      "input": {
+        "data": "60165f0104303130375f36063034303030305c0460617577"
+      },
+      "expect": {
+        "out": {
+          "version": "1.7",
+          "unicodeVersion": "4.0.0",
+          "dataGroupsPresent": [
+            "Common",
+            "DG1",
+            "DG2",
+            "SecurityData"
+          ]
+        }
+      }
+    },
+    {
+      "name": "version leading zeros collapse: \"0007\" -> 0.7",
+      "op": "com.parse",
+      "input": {
+        "data": "60145f0104303030375f36063034303030305c026175"
+      },
+      "expect": {
+        "out": {
+          "version": "0.7",
+          "unicodeVersion": "4.0.0",
+          "dataGroupsPresent": [
+            "DG1",
+            "DG2"
+          ]
+        }
+      }
+    },
+    {
+      "name": "version non-numeric component -> Unknown, unicode still parsed",
+      "op": "com.parse",
+      "input": {
+        "data": "60145f0104414230375f36063034303030305c026175"
+      },
+      "expect": {
+        "out": {
+          "version": "Unknown",
+          "unicodeVersion": "4.0.0",
+          "dataGroupsPresent": [
+            "DG1",
+            "DG2"
+          ]
+        }
+      }
+    },
+    {
+      "name": "version wrong byte count (3) -> Unknown",
+      "op": "com.parse",
+      "input": {
+        "data": "60135f01033031305f36063034303030305c026175"
+      },
+      "expect": {
+        "out": {
+          "version": "Unknown",
+          "unicodeVersion": "4.0.0",
+          "dataGroupsPresent": [
+            "DG1",
+            "DG2"
+          ]
+        }
+      }
+    },
+    {
+      "name": "version interior NUL terminates component: 31 00 30 37 -> 1.7 (cString)",
+      "op": "com.parse",
+      "input": {
+        "data": "60145f0104310030375f36063034303030305c026175"
+      },
+      "expect": {
+        "out": {
+          "version": "1.7",
+          "unicodeVersion": "4.0.0",
+          "dataGroupsPresent": [
+            "DG1",
+            "DG2"
+          ]
+        }
+      }
+    },
+    {
+      "name": "unicodeVersion three components: \"020100\" -> 2.1.0",
+      "op": "com.parse",
+      "input": {
+        "data": "60145f0104303130375f36063032303130305c026175"
+      },
+      "expect": {
+        "out": {
+          "version": "1.7",
+          "unicodeVersion": "2.1.0",
+          "dataGroupsPresent": [
+            "DG1",
+            "DG2"
+          ]
+        }
+      }
+    },
+    {
+      "name": "unicodeVersion non-numeric -> Unknown, version still parsed",
+      "op": "com.parse",
+      "input": {
+        "data": "60145f0104303130375f36063034303030585c026175"
+      },
+      "expect": {
+        "out": {
+          "version": "1.7",
+          "unicodeVersion": "Unknown",
+          "dataGroupsPresent": [
+            "DG1",
+            "DG2"
+          ]
+        }
+      }
+    },
+    {
+      "name": "unknown tag byte in 5C list silently skipped",
+      "op": "com.parse",
+      "input": {
+        "data": "60155f0104303130375f36063034303030305c03619975"
+      },
+      "expect": {
+        "out": {
+          "version": "1.7",
+          "unicodeVersion": "4.0.0",
+          "dataGroupsPresent": [
+            "DG1",
+            "DG2"
+          ]
+        }
+      }
+    },
+    {
+      "name": "first DO not 5F01 -> InvalidResponse",
+      "op": "com.parse",
+      "input": {
+        "data": "60135f3604303130375f01063034303030305c0161"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "second DO not 5F36 -> InvalidResponse",
+      "op": "com.parse",
+      "input": {
+        "data": "60135f0104303130375c01615f3606303430303030"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "third DO not 5C -> InvalidResponse",
+      "op": "com.parse",
+      "input": {
+        "data": "60145f0104303130375f36063034303030305f1f0161"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "empty file -> CannotDecodeASN1Length",
+      "op": "com.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": ""
+      },
+      "expect": {
+        "error": "CannotDecodeASN1Length"
+      }
+    },
+    {
+      "name": "1-byte file -> CannotDecodeASN1Length",
+      "op": "com.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "60"
+      },
+      "expect": {
+        "error": "CannotDecodeASN1Length"
+      }
+    },
+    {
+      "name": "two-byte tag at last byte -> TagNotValid",
+      "op": "com.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "60055f"
+      },
+      "expect": {
+        "error": "TagNotValid"
+      }
+    },
+    {
+      "name": "value length past buffer -> InvalidASN1Value",
+      "op": "com.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "60065f011030"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "over-long blob: body includes trailing bytes",
+      "op": "dg.parseDG",
+      "input": {
+        "data": "60165f0104303130375f36063034303030305c0460617577dead"
+      },
+      "expect": {
+        "out": {
+          "type": "COM",
+          "datagroupType": "COM",
+          "body": "5f0104303130375f36063034303030305c0460617577dead"
+        }
+      }
+    },
+    {
+      "name": "over-long blob: hash covers trailing bytes",
+      "op": "dg.hash",
+      "input": {
+        "data": "60165f0104303130375f36063034303030305c0460617577dead",
+        "algorythm": "SHA256"
+      },
+      "expect": {
+        "out": {
+          "hash": "143db5e7e7aebc9f0e4c8f9a9f8ea83331f23ea1b8625f2eedd36f2d42181b08"
+        }
+      }
+    },
+    {
+      "name": "hash(\"MD5\") throws (fixed: dart)",
+      "op": "dg.hash",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "60165f0104303130375f36063034303030305c0460617577",
+        "algorythm": "MD5"
+      },
+      "expect": {
+        "error": "InvalidHashAlgorithmSpecified"
+      }
+    },
+    {
+      "name": "hash(\"MD5\") silently empty (upstream)",
+      "op": "dg.hash",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "60165f0104303130375f36063034303030305c0460617577",
+        "algorythm": "MD5"
+      },
+      "expect": {
+        "out": {
+          "hash": ""
+        }
+      }
+    },
+    {
+      "name": "hash names case-sensitive: \"sha256\" throws (dart)",
+      "op": "dg.hash",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "60165f0104303130375f36063034303030305c0460617577",
+        "algorythm": "sha256"
+      },
+      "expect": {
+        "error": "InvalidHashAlgorithmSpecified"
+      }
+    },
+    {
+      "name": "hash names case-sensitive: \"sha256\" silently empty (upstream)",
+      "op": "dg.hash",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "60165f0104303130375f36063034303030305c0460617577",
+        "algorythm": "sha256"
+      },
+      "expect": {
+        "out": {
+          "hash": ""
+        }
+      }
+    },
+    {
+      "name": "hash(\"SHA1\") over the whole file",
+      "op": "dg.hash",
+      "input": {
+        "data": "60165f0104303130375f36063034303030305c0460617577",
+        "algorythm": "SHA1"
+      },
+      "expect": {
+        "out": {
+          "hash": "64a895f5f78f376658d1353cfccce61a234c26cc"
+        }
+      }
+    }
+  ]
+}

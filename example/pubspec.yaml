@@ -1,0 +1,28 @@
+name: emrtd_core_example
+description: Reads an eMRTD chip over NFC with emrtd_core, the reference integration.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  emrtd_core:
+    path: ../
+  # The DG2 face image is JPEG 2000 on essentially every e-passport of the
+  # last fifteen years. emrtd_core detects the format and stops there
+  # (presentation is not its job), so decoding is the app's choice. j2k is a
+  # pure-Dart codec, which keeps this example free of a native build. It is
+  # deliberately NOT a dependency of emrtd_core itself; the package's README
+  # says why.
+  j2k: ^0.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

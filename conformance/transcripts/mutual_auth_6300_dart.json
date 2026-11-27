@@ -1,0 +1,37 @@
+{
+  "transcript": "mutual_auth_6300_dart",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "63 XX on INS 82 is a typed auth failure at send()",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "doMutualAuthentication",
+    "args": {
+      "cmdData": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "82",
+        "p1": "00",
+        "p2": "00",
+        "data": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657",
+        "le": 256
+      },
+      "wire": "0082000028303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565700",
+      "resp": {
+        "data": "",
+        "sw": "6300"
+      }
+    }
+  ],
+  "expect": {
+    "error": "InvalidMRZKey"
+  }
+}

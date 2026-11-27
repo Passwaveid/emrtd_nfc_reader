@@ -1,0 +1,39 @@
+{
+  "transcript": "general_authenticate_6700_swift",
+  "schemaVersion": 1,
+  "runners": [
+    "swift"
+  ],
+  "description": "Upstream: 67 00 passes send() as success (its && status check), then unwrapDO(0x7C, []) throws; the catch block is dead code - no retry on the wire",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "sendGeneralAuthenticate",
+    "args": {
+      "data": "",
+      "lengthExpected": 231,
+      "isLast": false
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 231
+      },
+      "wire": "10860000027c00e7",
+      "resp": {
+        "data": "",
+        "sw": "6700"
+      }
+    }
+  ],
+  "expect": {
+    "error": "InvalidASN1Value"
+  }
+}

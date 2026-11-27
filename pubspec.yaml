@@ -1,0 +1,46 @@
+name: emrtd_core
+description: eMRTD (passport/ID chip) reading over NFC (BAC, PACE, secure messaging, LDS parsing). Dart port of NFCPassportReader (MIT).
+version: 1.0.0
+repository: https://github.com/passwaveid/emrtd_nfc_reader
+homepage: https://github.com/passwaveid/emrtd_nfc_reader
+
+environment:
+  # The floor is what CI runs: ghcr.io/cirruslabs/flutter:3.44.0, Dart
+  # 3.12.0. Nothing lower is tested, so nothing
+  # lower is claimed; pub never checks a dependency's floor against a
+  # consumer's declared one, so an understated floor fails on a stranger's
+  # machine, deep inside a build.
+  sdk: ^3.12.0
+  # Dart 3.12.0 first shipped in Flutter 3.44.0, so a lower Flutter floor
+  # would contradict the sdk floor. Derived here, not copied.
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The vendored fork of pub.dev 3.6.2: the same package plus the two
+  # NFCTag capability fields nfc_kit_transceiver.dart reads (see
+  # vendor/flutter_nfc_kit/VENDORING.md). A path dependency rather than an
+  # override so consumers inherit it, by path and by git checkout alike
+  # (verified 2026-08-24).
+  #
+  # pub.dev refuses a path source, so this line is what stands between the
+  # package and publication. The way out: publish the fork as
+  # `flutter_nfc_kit_isodep` 3.6.2 and depend on it hosted. Restore the
+  # plain hosted `flutter_nfc_kit` once upstream ships the fields, and
+  # discontinue the fork.
+  flutter_nfc_kit:
+    path: vendor/flutter_nfc_kit
+  logging: ^1.2.0
+  # pointycastle for the ciphers and curves, `crypto` for the hashes.
+  # pointycastle's own CMac is NOT used: its wrong-IV-size bug
+  # (bcgit/pc-dart#200) was re-verified unfixed in 4.0.0 at pin time
+  # (2026-07-17), so crypto/mac.dart vendors a minimal SP 800-38B CMAC
+  # instead.
+  pointycastle: ^4.0.0
+  crypto: ^3.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^4.0.0

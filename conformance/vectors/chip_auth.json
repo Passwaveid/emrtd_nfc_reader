@@ -1,0 +1,802 @@
+{
+  "suite": "chip_auth",
+  "schemaVersion": 1,
+  "description": "Chip Authentication dispatch + key material. Pins the eight CA suites' keyAgreement/cipher/keyLength/protocolOIDString tables and their InvalidDataPassed rejections, the two CA-public-key OID names, the SubjectPublicKeyInfo parser that replaces upstream's d2i_PUBKEY (named-curve, explicit prime-field ECParameters, X9.42 dhpublicnumber and PKCS#3 dhKeyAgreement, plus the nil-contract rejects), the CA session-key derivation composed from the OID (cipherAlg + keyLength into the KDF, ENC then MAC), and the infer-OID fallback for pubkey-only DG14s. SPKI fixtures marked openssl-generated are `openssl genpkey`/`openssl pkey -pubout` output, an oracle independent of both runners; `publicKey` is upstream's getPublicKeyData (EC_POINT_point2oct uncompressed / BN_bn2bin) and `domain` the EC_GROUP or DH parameters, both derivable on either side. Upstream's DH keySeed shape (stripped secret left-aligned in a DH_size(p) zero buffer) travels as a literal keySeed here; the composition itself is exercised end-to-end by ca_session_dh_aes_chaining.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "chipAuthInfo.oidInfo id-CA-DH-3DES-CBC-CBC",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.3.1.1"
+      },
+      "expect": {
+        "out": {
+          "keyAgreementAlgorithm": "DH",
+          "cipherAlgorithm": "DESede",
+          "keyLength": 128,
+          "protocolOIDString": "id-CA-DH-3DES-CBC-CBC"
+        }
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo id-CA-DH-AES-CBC-CMAC-128",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.3.1.2"
+      },
+      "expect": {
+        "out": {
+          "keyAgreementAlgorithm": "DH",
+          "cipherAlgorithm": "AES",
+          "keyLength": 128,
+          "protocolOIDString": "id-CA-DH-AES-CBC-CMAC-128"
+        }
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo id-CA-DH-AES-CBC-CMAC-192",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.3.1.3"
+      },
+      "expect": {
+        "out": {
+          "keyAgreementAlgorithm": "DH",
+          "cipherAlgorithm": "AES",
+          "keyLength": 192,
+          "protocolOIDString": "id-CA-DH-AES-CBC-CMAC-192"
+        }
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo id-CA-DH-AES-CBC-CMAC-256",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.3.1.4"
+      },
+      "expect": {
+        "out": {
+          "keyAgreementAlgorithm": "DH",
+          "cipherAlgorithm": "AES",
+          "keyLength": 256,
+          "protocolOIDString": "id-CA-DH-AES-CBC-CMAC-256"
+        }
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo id-CA-ECDH-3DES-CBC-CBC",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.3.2.1"
+      },
+      "expect": {
+        "out": {
+          "keyAgreementAlgorithm": "ECDH",
+          "cipherAlgorithm": "DESede",
+          "keyLength": 128,
+          "protocolOIDString": "id-CA-ECDH-3DES-CBC-CBC"
+        }
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo id-CA-ECDH-AES-CBC-CMAC-128",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.3.2.2"
+      },
+      "expect": {
+        "out": {
+          "keyAgreementAlgorithm": "ECDH",
+          "cipherAlgorithm": "AES",
+          "keyLength": 128,
+          "protocolOIDString": "id-CA-ECDH-AES-CBC-CMAC-128"
+        }
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo id-CA-ECDH-AES-CBC-CMAC-192",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.3.2.3"
+      },
+      "expect": {
+        "out": {
+          "keyAgreementAlgorithm": "ECDH",
+          "cipherAlgorithm": "AES",
+          "keyLength": 192,
+          "protocolOIDString": "id-CA-ECDH-AES-CBC-CMAC-192"
+        }
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo id-CA-ECDH-AES-CBC-CMAC-256",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.3.2.4"
+      },
+      "expect": {
+        "out": {
+          "keyAgreementAlgorithm": "ECDH",
+          "cipherAlgorithm": "AES",
+          "keyLength": 256,
+          "protocolOIDString": "id-CA-ECDH-AES-CBC-CMAC-256"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-3DES-CBC-CBC: ICAO-App-D-shaped 16-byte seed",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "oid": "0.4.0.127.0.7.2.2.3.1.1"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+          "ksMac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-128: ICAO-App-D-shaped 16-byte seed",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "oid": "0.4.0.127.0.7.2.2.3.1.2"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "969ec03b1cbfe9ddd11ab1fed206ebe4",
+          "ksMac": "f0ca1e1eb5adf208816b88dd579cc1f8"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-192: ICAO-App-D-shaped 16-byte seed",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "oid": "0.4.0.127.0.7.2.2.3.1.3"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "2c0d9541b93a77a7291812aa85c38fe56da59c9af5daa7e2",
+          "ksMac": "26594b2a9180344501e0da10f84db65e2fea4838351740c6"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-256: ICAO-App-D-shaped 16-byte seed",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "oid": "0.4.0.127.0.7.2.2.3.1.4"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "2c0d9541b93a77a7291812aa85c38fe56da59c9af5daa7e25c7802fdb121aea3",
+          "ksMac": "26594b2a9180344501e0da10f84db65e2fea4838351740c63a4ee5a0be38f5b5"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-3DES-CBC-CBC: ICAO-App-D-shaped 16-byte seed",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "oid": "0.4.0.127.0.7.2.2.3.2.1"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+          "ksMac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-128: ICAO-App-D-shaped 16-byte seed",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "oid": "0.4.0.127.0.7.2.2.3.2.2"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "969ec03b1cbfe9ddd11ab1fed206ebe4",
+          "ksMac": "f0ca1e1eb5adf208816b88dd579cc1f8"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-192: ICAO-App-D-shaped 16-byte seed",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "oid": "0.4.0.127.0.7.2.2.3.2.3"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "2c0d9541b93a77a7291812aa85c38fe56da59c9af5daa7e2",
+          "ksMac": "26594b2a9180344501e0da10f84db65e2fea4838351740c6"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-256: ICAO-App-D-shaped 16-byte seed",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0036d272f5c350acac50c3f572d23600",
+        "oid": "0.4.0.127.0.7.2.2.3.2.4"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "2c0d9541b93a77a7291812aa85c38fe56da59c9af5daa7e25c7802fdb121aea3",
+          "ksMac": "26594b2a9180344501e0da10f84db65e2fea4838351740c63a4ee5a0be38f5b5"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-3DES-CBC-CBC: leading-zero EC seed (padded x-coordinate)",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0000a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+        "oid": "0.4.0.127.0.7.2.2.3.1.1"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "1ac91bc2408e2152edfea9154098df2a1ac91bc2408e2152",
+          "ksMac": "81d10e0dcff01513606aa9109ca47b5881d10e0dcff01513"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-128: leading-zero EC seed (padded x-coordinate)",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0000a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+        "oid": "0.4.0.127.0.7.2.2.3.1.2"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "1ac91bc2408e2152edfea9154098df2a",
+          "ksMac": "81d10e0dcff01513606aa9109ca47b58"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-192: leading-zero EC seed (padded x-coordinate)",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0000a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+        "oid": "0.4.0.127.0.7.2.2.3.1.3"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "8700260a1761b023ebbcebb89a8c041b1c4bd23231ce217b",
+          "ksMac": "c69c6a8bb43c14f09b300af61c3a370bc64cc7a46fb9eab3"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-256: leading-zero EC seed (padded x-coordinate)",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0000a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+        "oid": "0.4.0.127.0.7.2.2.3.1.4"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "8700260a1761b023ebbcebb89a8c041b1c4bd23231ce217bcd466dab970e6878",
+          "ksMac": "c69c6a8bb43c14f09b300af61c3a370bc64cc7a46fb9eab3628bbcadecc860d9"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-3DES-CBC-CBC: leading-zero EC seed (padded x-coordinate)",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0000a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+        "oid": "0.4.0.127.0.7.2.2.3.2.1"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "1ac91bc2408e2152edfea9154098df2a1ac91bc2408e2152",
+          "ksMac": "81d10e0dcff01513606aa9109ca47b5881d10e0dcff01513"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-128: leading-zero EC seed (padded x-coordinate)",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0000a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+        "oid": "0.4.0.127.0.7.2.2.3.2.2"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "1ac91bc2408e2152edfea9154098df2a",
+          "ksMac": "81d10e0dcff01513606aa9109ca47b58"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-192: leading-zero EC seed (padded x-coordinate)",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0000a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+        "oid": "0.4.0.127.0.7.2.2.3.2.3"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "8700260a1761b023ebbcebb89a8c041b1c4bd23231ce217b",
+          "ksMac": "c69c6a8bb43c14f09b300af61c3a370bc64cc7a46fb9eab3"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-256: leading-zero EC seed (padded x-coordinate)",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "0000a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+        "oid": "0.4.0.127.0.7.2.2.3.2.4"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "8700260a1761b023ebbcebb89a8c041b1c4bd23231ce217bcd466dab970e6878",
+          "ksMac": "c69c6a8bb43c14f09b300af61c3a370bc64cc7a46fb9eab3628bbcadecc860d9"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-3DES-CBC-CBC; DH seed: stripped secret left-aligned in a zero buffer",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "9f3ec1a2b4d60718293a4b5c6d7e8f9000000000000000000000000000000000",
+        "oid": "0.4.0.127.0.7.2.2.3.1.1"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "18802d0d513386cb7f0dacf0ce81a0ba18802d0d513386cb",
+          "ksMac": "330cb8ea805a1d01420ac9f8f3f4d6fc330cb8ea805a1d01"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-128; DH seed: stripped secret left-aligned in a zero buffer",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "9f3ec1a2b4d60718293a4b5c6d7e8f9000000000000000000000000000000000",
+        "oid": "0.4.0.127.0.7.2.2.3.1.2"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "18802d0d513386cb7f0dacf0ce81a0ba",
+          "ksMac": "330cb8ea805a1d01420ac9f8f3f4d6fc"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-192; DH seed: stripped secret left-aligned in a zero buffer",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "9f3ec1a2b4d60718293a4b5c6d7e8f9000000000000000000000000000000000",
+        "oid": "0.4.0.127.0.7.2.2.3.1.3"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "99b04b00e2809c1584bad1d544928c14b98ead3665493b3e",
+          "ksMac": "403cf1a861a1a9eb8fb594c7da9eebb0231fd5107f11d834"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-DH-AES-CBC-CMAC-256; DH seed: stripped secret left-aligned in a zero buffer",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "9f3ec1a2b4d60718293a4b5c6d7e8f9000000000000000000000000000000000",
+        "oid": "0.4.0.127.0.7.2.2.3.1.4"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "99b04b00e2809c1584bad1d544928c14b98ead3665493b3ed48229cfe99aa89b",
+          "ksMac": "403cf1a861a1a9eb8fb594c7da9eebb0231fd5107f11d834f9b8e615042412c2"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-3DES-CBC-CBC; DH seed: stripped secret left-aligned in a zero buffer",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "9f3ec1a2b4d60718293a4b5c6d7e8f9000000000000000000000000000000000",
+        "oid": "0.4.0.127.0.7.2.2.3.2.1"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "18802d0d513386cb7f0dacf0ce81a0ba18802d0d513386cb",
+          "ksMac": "330cb8ea805a1d01420ac9f8f3f4d6fc330cb8ea805a1d01"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-128; DH seed: stripped secret left-aligned in a zero buffer",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "9f3ec1a2b4d60718293a4b5c6d7e8f9000000000000000000000000000000000",
+        "oid": "0.4.0.127.0.7.2.2.3.2.2"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "18802d0d513386cb7f0dacf0ce81a0ba",
+          "ksMac": "330cb8ea805a1d01420ac9f8f3f4d6fc"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-192; DH seed: stripped secret left-aligned in a zero buffer",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "9f3ec1a2b4d60718293a4b5c6d7e8f9000000000000000000000000000000000",
+        "oid": "0.4.0.127.0.7.2.2.3.2.3"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "99b04b00e2809c1584bad1d544928c14b98ead3665493b3e",
+          "ksMac": "403cf1a861a1a9eb8fb594c7da9eebb0231fd5107f11d834"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.deriveSessionKeys id-CA-ECDH-AES-CBC-CMAC-256; DH seed: stripped secret left-aligned in a zero buffer",
+      "op": "chipAuth.deriveSessionKeys",
+      "input": {
+        "keySeed": "9f3ec1a2b4d60718293a4b5c6d7e8f9000000000000000000000000000000000",
+        "oid": "0.4.0.127.0.7.2.2.3.2.4"
+      },
+      "expect": {
+        "out": {
+          "ksEnc": "99b04b00e2809c1584bad1d544928c14b98ead3665493b3ed48229cfe99aa89b",
+          "ksMac": "403cf1a861a1a9eb8fb594c7da9eebb0231fd5107f11d834f9b8e615042412c2"
+        }
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo rejects a PACE OID (invalid for CA)",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.4.2.2"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "chipAuthInfo.oidInfo rejects an unrelated OID",
+      "op": "chipAuthInfo.oidInfo",
+      "input": {
+        "oid": "1.2.840.113549.1.1.2"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "chipAuthPublicKeyInfo.protocolOIDString id-PK-DH",
+      "op": "chipAuthPublicKeyInfo.protocolOIDString",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.1.1"
+      },
+      "expect": {
+        "out": {
+          "name": "id-PK-DH"
+        }
+      }
+    },
+    {
+      "name": "chipAuthPublicKeyInfo.protocolOIDString id-PK-ECDH",
+      "op": "chipAuthPublicKeyInfo.protocolOIDString",
+      "input": {
+        "oid": "0.4.0.127.0.7.2.2.1.2"
+      },
+      "expect": {
+        "out": {
+          "name": "id-PK-ECDH"
+        }
+      }
+    },
+    {
+      "name": "chipAuthPublicKeyInfo.protocolOIDString passes an unknown OID through",
+      "op": "chipAuthPublicKeyInfo.protocolOIDString",
+      "input": {
+        "oid": "1.2.840.113549.1.1.2"
+      },
+      "expect": {
+        "out": {
+          "name": "1.2.840.113549.1.1.2"
+        }
+      }
+    },
+    {
+      "name": "brainpoolP256r1 named curve (openssl-generated)",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "305a301406072a8648ce3d020106092b24030302080101070342000439d7966fecbc384a7c6cca6aa8163a38e0bde6130a542c47ee43bd66044572bd48bd4ddd275e67184db5fbe3f957674c9d2aef716a5952f02393edba3696ad04"
+      },
+      "expect": {
+        "out": {
+          "parsed": true,
+          "kind": "ec",
+          "publicKey": "0439d7966fecbc384a7c6cca6aa8163a38e0bde6130a542c47ee43bd66044572bd48bd4ddd275e67184db5fbe3f957674c9d2aef716a5952f02393edba3696ad04",
+          "domain": {
+            "p": "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5377",
+            "a": "7d5a0975fc2c3057eef67530417affe7fb8055c126dc5c6ce94a4b44f330b5d9",
+            "b": "26dc5c6ce94a4b44f330b5d9bbd77cbf958416295cf7e1ce6bccdc18ff8c07b6",
+            "g": "048bd2aeb9cb7e57cb2c4b482ffc81b7afb9de27e1e3bd23c23a4453bd9ace3262547ef835c3dac4fd97f8461a14611dc9c27745132ded8e545c1d54c72f046997",
+            "n": "a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7",
+            "h": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "prime256v1 named curve (openssl-generated)",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "3059301306072a8648ce3d020106082a8648ce3d030107034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "parsed": true,
+          "kind": "ec",
+          "publicKey": "045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7",
+          "domain": {
+            "p": "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+            "a": "ffffffff00000001000000000000000000000000fffffffffffffffffffffffc",
+            "b": "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+            "g": "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
+            "n": "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+            "h": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "prime256v1 explicit prime-field ECParameters (openssl -param_enc explicit): same key as the named case",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "3082014b3082010306072a8648ce3d02013081f7020101302c06072a8648ce3d0101022100ffffffff00000001000000000000000000000000ffffffffffffffffffffffff305b0420ffffffff00000001000000000000000000000000fffffffffffffffffffffffc04205ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b031500c49d360886e704936a6678e1139d26b7819f7e900441046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5022100ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551020101034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "parsed": true,
+          "kind": "ec",
+          "publicKey": "045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7",
+          "domain": {
+            "p": "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+            "a": "ffffffff00000001000000000000000000000000fffffffffffffffffffffffc",
+            "b": "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+            "g": "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
+            "n": "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+            "h": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "X9.42 dhpublicnumber, RFC 5114 1024/160 group (openssl DHX)",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "308201b73082012c06072a8648ce3e02013082011f02818100b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a437102818100a4d1cbd5c3fd34126765a442efb99905f8104dd258ac507fd6406cff14266d31266fea1e5c41564b777e690f5504f213160217b4b01b886a5e91547f9e2749f4d7fbd7d3b9a92ee1909d0d2263f80a76a6a24c087a091f531dbf0a0169b6a28ad662a4d18e73afa32d779d5918d08bc8858f4dcef97c2a24855e6eeb22b3b2e5021500f518aa8781a8df278aba4e7d64b7cb9d494623530381840002818066c8497988a154ea4873f3815f1ba844aaed722495cfbcf06dd303fee2505448a24f52ba1425e11fe73d8f4faf3317c1156c694f93bb1f8f45ab94ffc0be61eb993102abb4cddb5d888e0054137250545a72f9de78e7c6741fdc429ff7c1126b5df3e2b42cf16c4e0c18b9482f16097f82c3f843d043fccf390ea61ef09c3ee9"
+      },
+      "expect": {
+        "out": {
+          "parsed": true,
+          "kind": "dh",
+          "publicKey": "66c8497988a154ea4873f3815f1ba844aaed722495cfbcf06dd303fee2505448a24f52ba1425e11fe73d8f4faf3317c1156c694f93bb1f8f45ab94ffc0be61eb993102abb4cddb5d888e0054137250545a72f9de78e7c6741fdc429ff7c1126b5df3e2b42cf16c4e0c18b9482f16097f82c3f843d043fccf390ea61ef09c3ee9",
+          "domain": {
+            "p": "b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a4371",
+            "g": "a4d1cbd5c3fd34126765a442efb99905f8104dd258ac507fd6406cff14266d31266fea1e5c41564b777e690f5504f213160217b4b01b886a5e91547f9e2749f4d7fbd7d3b9a92ee1909d0d2263f80a76a6a24c087a091f531dbf0a0169b6a28ad662a4d18e73afa32d779d5918d08bc8858f4dcef97c2a24855e6eeb22b3b2e5",
+            "q": "f518aa8781a8df278aba4e7d64b7cb9d49462353"
+          }
+        }
+      }
+    },
+    {
+      "name": "PKCS#3 dhKeyAgreement, 1024-bit generated params (openssl DH)",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "3082012030819506092a864886f70d01030130818702818100c9f5619b12f5e0cdd5d96fd95706c04f7cff8a1aa8ad101a558a754c054dfa56ccffc6791ccfb8f84fee5d3a8b63bf26aadb10103dff5085ff88daa1ee60134ca8877e244b5624bff3a819df55d5966d6c145085d94eb8fac110faf7248f16b4d16df50c98224accca4ff810e2dc15bca7906f45e2f26ab57748629b960540170201020381850002818100b5ca2fbcaeaa691880a68e0caf4d3a46cfb2d65f21030f28b3384898952505cef5a0569330dbdd3d83582d4e1965391c8aa9503ed37ac555d60fcf22734c9c622c2b3ed7f5550940fa1aae08a3e7832164a57313661b74df43d55daa1700eb4fce07a80e599d622bf00bffb6c04bc78a17c6270f41f285d5c75fde5a1a34b143"
+      },
+      "expect": {
+        "out": {
+          "parsed": true,
+          "kind": "dh",
+          "publicKey": "b5ca2fbcaeaa691880a68e0caf4d3a46cfb2d65f21030f28b3384898952505cef5a0569330dbdd3d83582d4e1965391c8aa9503ed37ac555d60fcf22734c9c622c2b3ed7f5550940fa1aae08a3e7832164a57313661b74df43d55daa1700eb4fce07a80e599d622bf00bffb6c04bc78a17c6270f41f285d5c75fde5a1a34b143",
+          "domain": {
+            "p": "c9f5619b12f5e0cdd5d96fd95706c04f7cff8a1aa8ad101a558a754c054dfa56ccffc6791ccfb8f84fee5d3a8b63bf26aadb10103dff5085ff88daa1ee60134ca8877e244b5624bff3a819df55d5966d6c145085d94eb8fac110faf7248f16b4d16df50c98224accca4ff810e2dc15bca7906f45e2f26ab57748629b96054017",
+            "g": "02",
+            "q": null
+          }
+        }
+      }
+    },
+    {
+      "name": "port-built brainpoolP256r1 SPKI (the DG14/transcript chip key)",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "305a301406072a8648ce3d020106092b2403030208010107034200045cc25ad351f76be4bfa9498f9d9ce70a72a612e4f39df830d956ec82cb3ce3536f038dfed769c8875badf25e6cc0b399a178a3a8e91174f99b66981efa14fcc9"
+      },
+      "expect": {
+        "out": {
+          "parsed": true,
+          "kind": "ec",
+          "publicKey": "045cc25ad351f76be4bfa9498f9d9ce70a72a612e4f39df830d956ec82cb3ce3536f038dfed769c8875badf25e6cc0b399a178a3a8e91174f99b66981efa14fcc9",
+          "domain": {
+            "p": "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5377",
+            "a": "7d5a0975fc2c3057eef67530417affe7fb8055c126dc5c6ce94a4b44f330b5d9",
+            "b": "26dc5c6ce94a4b44f330b5d9bbd77cbf958416295cf7e1ce6bccdc18ff8c07b6",
+            "g": "048bd2aeb9cb7e57cb2c4b482ffc81b7afb9de27e1e3bd23c23a4453bd9ace3262547ef835c3dac4fd97f8461a14611dc9c27745132ded8e545c1d54c72f046997",
+            "n": "a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7",
+            "h": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "garbage bytes",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "ffffff"
+      },
+      "expect": {
+        "out": {
+          "parsed": false
+        }
+      }
+    },
+    {
+      "name": "truncated SEQUENCE",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "3082ffff3013"
+      },
+      "expect": {
+        "out": {
+          "parsed": false
+        }
+      }
+    },
+    {
+      "name": "malformed RSAPublicKey inside a well-formed rsaEncryption SPKI -> parsed:false; dart-only: d2i_PUBKEY's nil here is indistinguishable from its other nil paths",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "300d06092a864886f70d010101050003020030"
+      },
+      "expect": {
+        "out": {
+          "parsed": false
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "RSA-1024 SubjectPublicKeyInfo parses; dart-only: the shared parser has an RSA arm for DG15, and a CA-pubkey entry carrying one yields an info the handshake cannot use (upstream's getPublicKeyData falls through both branches and yields []), so the key fails rather than the entry being skipped",
+      "op": "spki.publicKeyData",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "30819f300d06092a864886f70d010101050003818d0030818902818100912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f0203010001"
+      },
+      "expect": {
+        "out": {
+          "parsed": true,
+          "kind": "rsa",
+          "modulus": "912357a1037b89efe87df82d35300cc7dffb46dc3bfd890cf913180b702804d385550371b3013cc58966b36af2b86fc8ed44aedc77e43f0f46e44949142ea059df30980e085e12d6ecb981faf14245886fbbf7b939439debc788fbb676bb3bbb0cacc8413e8a8b8efd007d67bc12761b16a374cb0e9de7a06cb6940097501a4f",
+          "exponent": "010001"
+        }
+      }
+    },
+    {
+      "name": "unknown named-curve OID (secp256k1); dart-only: OpenSSL knows secp256k1, the port's named-curve table is the 11 P11 Table-6 curves plus the X9.62 aliases",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "3056301006072a8648ce3d020106052b8104000a034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "parsed": false
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "BIT STRING unused-bits byte is not 0; dart-only: d2i_PUBKEY tolerates it; a key encoding is whole-octet, so the port refuses",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "3059301306072a8648ce3d020106082a8648ce3d030107034200075fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "parsed": false
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "hybrid point encoding 06 (upstream oct2point accepts, the port rejects); dart-only: EC_POINT_oct2point accepts hybrid forms; ecPointDecode does not",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "3059301306072a8648ce3d020106082a8648ce3d030107034200065fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "parsed": false
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "off-curve point (TR-03111 3.2.1); dart-only: both reject, but only the port's rejection is observable as parsed:false; upstream's nil is indistinguishable from the other nil paths here",
+      "op": "spki.publicKeyData",
+      "input": {
+        "data": "3059301306072a8648ce3d020106082a8648ce3d030107034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc6"
+      },
+      "expect": {
+        "out": {
+          "parsed": false
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "chipAuth.inferOid id-PK-ECDH guesses id-CA-ECDH-3DES-CBC-CBC (French-passport fallback)",
+      "op": "chipAuth.inferOid",
+      "input": {
+        "publicKeyOid": "0.4.0.127.0.7.2.2.1.2"
+      },
+      "expect": {
+        "out": {
+          "oid": "0.4.0.127.0.7.2.2.3.2.1"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.inferOid id-PK-DH guesses id-CA-DH-3DES-CBC-CBC",
+      "op": "chipAuth.inferOid",
+      "input": {
+        "publicKeyOid": "0.4.0.127.0.7.2.2.1.1"
+      },
+      "expect": {
+        "out": {
+          "oid": "0.4.0.127.0.7.2.2.3.1.1"
+        }
+      }
+    },
+    {
+      "name": "chipAuth.inferOid returns null for any other public-key OID (the key is skipped, not an error)",
+      "op": "chipAuth.inferOid",
+      "input": {
+        "publicKeyOid": "1.2.840.113549.1.1.1"
+      },
+      "expect": {
+        "out": {
+          "oid": null
+        }
+      }
+    }
+  ]
+}

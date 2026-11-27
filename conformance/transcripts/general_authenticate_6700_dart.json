@@ -1,0 +1,57 @@
+{
+  "transcript": "general_authenticate_6700_dart",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "With the status check corrected, 67 00 throws at send(), and the preserved catch fires one retry with Le 256",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "sendGeneralAuthenticate",
+    "args": {
+      "data": "",
+      "lengthExpected": 231,
+      "isLast": false
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 231
+      },
+      "wire": "10860000027c00e7",
+      "resp": {
+        "data": "",
+        "sw": "6700"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "wire": "10860000027c0000",
+      "resp": {
+        "data": "7c0a80080011223344556677",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": {
+      "data": "80080011223344556677",
+      "sw": "9000"
+    }
+  }
+}

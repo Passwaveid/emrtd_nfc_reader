@@ -1,0 +1,1455 @@
+{
+  "suite": "apdu",
+  "schemaVersion": 1,
+  "description": "Transport/APDU layer: CommandAPDU wire encoder (canonical minimal form - dart-only, CoreNFC never exposed wire bytes), raw-APDU parser (malformed input -> typed errors), send() SW truth table (the corrected status check split by runner; the 6C exact-length retry and the 62 82 end-of-file tolerance dart-only), decodeError table (two rows corrected; private upstream -> dart-only), and TagReader command constructors (structured fields; wires pinned by the sibling encode cases).",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "encode case-1: header only, no data no Le",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": -1
+      },
+      "expect": {
+        "out": {
+          "wire": "00840000"
+        }
+      }
+    },
+    {
+      "name": "encode case-2 short: GET CHALLENGE Le=8",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "expect": {
+        "out": {
+          "wire": "0084000008"
+        }
+      }
+    },
+    {
+      "name": "encode case-2 short: Le=256 encodes 00",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "04",
+        "data": "",
+        "le": 256
+      },
+      "expect": {
+        "out": {
+          "wire": "00b0000400"
+        }
+      }
+    },
+    {
+      "name": "encode case-3: SELECT MF via data 3F00, no Le",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "00",
+        "p2": "0c",
+        "data": "3f00",
+        "le": -1
+      },
+      "expect": {
+        "out": {
+          "wire": "00a4000c023f00"
+        }
+      }
+    },
+    {
+      "name": "encode case-3: SELECT eMRTD AID, no Le",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "04",
+        "p2": "0c",
+        "data": "a0000002471001",
+        "le": -1
+      },
+      "expect": {
+        "out": {
+          "wire": "00a4040c07a0000002471001"
+        }
+      }
+    },
+    {
+      "name": "encode case-3: SELECT EF by FID 011e",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "011e",
+        "le": -1
+      },
+      "expect": {
+        "out": {
+          "wire": "00a4020c02011e"
+        }
+      }
+    },
+    {
+      "name": "encode case-4: MUTUAL AUTHENTICATE Lc=40 Le=256",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "82",
+        "p1": "00",
+        "p2": "00",
+        "data": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657",
+        "le": 256
+      },
+      "expect": {
+        "out": {
+          "wire": "0082000028303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565700"
+        }
+      }
+    },
+    {
+      "name": "encode extended Le 300, no data",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 300
+      },
+      "expect": {
+        "out": {
+          "wire": "00b0000000012c"
+        }
+      }
+    },
+    {
+      "name": "encode extended Le 65536 encodes 0000",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 65536
+      },
+      "expect": {
+        "out": {
+          "wire": "00840000000000"
+        }
+      }
+    },
+    {
+      "name": "encode extended Lc 256, no Le",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+        "le": -1
+      },
+      "expect": {
+        "out": {
+          "wire": "00860000000100000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+        }
+      }
+    },
+    {
+      "name": "encode extended Lc 256 with Le 256: Le spells two-byte 0100",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "comment": "mixed short/extended fields are prohibited; Lc>255 forces the whole APDU extended, so Le 256 is 0100, not 00",
+      "input": {
+        "cla": "00",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+        "le": 256
+      },
+      "expect": {
+        "out": {
+          "wire": "00860000000100000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff0100"
+        }
+      }
+    },
+    {
+      "name": "encode chaining CLA 10: GENERAL AUTHENTICATE non-last",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "10",
+        "ins": "86",
+        "p1": "00",
+        "p2": "00",
+        "data": "7c00",
+        "le": 256
+      },
+      "expect": {
+        "out": {
+          "wire": "10860000027c0000"
+        }
+      }
+    },
+    {
+      "name": "encode header read emits minimal short Le 04",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "comment": "upstream's raw header-read APDU spells extended Le (00b00000000004); parsed to fields the canonical encoder re-emits short form - protocol-outcome equivalent, more Android-compatible",
+      "input": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 4
+      },
+      "expect": {
+        "out": {
+          "wire": "00b0000004"
+        }
+      }
+    },
+    {
+      "name": "encode GET RESPONSE with Le from SW2",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "c0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "expect": {
+        "out": {
+          "wire": "00c0000008"
+        }
+      }
+    },
+    {
+      "name": "encode MSE SET AT (PACE), no Le",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "22",
+        "p1": "c1",
+        "p2": "a4",
+        "data": "800a04007f00070202040202830101",
+        "le": -1
+      },
+      "expect": {
+        "out": {
+          "wire": "0022c1a40f800a04007f00070202040202830101"
+        }
+      }
+    },
+    {
+      "name": "encode rejects expectedResponseLength 0",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 0
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "encode rejects expectedResponseLength above 65536",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 70000
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "parse upstream header-read raw (extended Le=4)",
+      "op": "apdu.parse",
+      "input": {
+        "raw": "00b00000000004"
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 4
+        }
+      }
+    },
+    {
+      "name": "parse upstream selectFile raw",
+      "op": "apdu.parse",
+      "input": {
+        "raw": "00a4020c02011e"
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "a4",
+          "p1": "02",
+          "p2": "0c",
+          "data": "011e",
+          "le": -1
+        }
+      }
+    },
+    {
+      "name": "parse short Le 00 as 256",
+      "op": "apdu.parse",
+      "comment": "CoreNFC parses a case-2S 00 as 256 (probed); the case-4S form is case 20",
+      "input": {
+        "raw": "00b0000400"
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "parse case-4 short with trailing Le 00 as 256",
+      "op": "apdu.parse",
+      "comment": "CoreNFC reports 0 here; the Swift codec's conformanceLe maps it to 256",
+      "input": {
+        "raw": "0082000028303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565700"
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "82",
+          "p1": "00",
+          "p2": "00",
+          "data": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "parse extended Le 0000 as 65536",
+      "op": "apdu.parse",
+      "input": {
+        "raw": "00840000000000"
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "84",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 65536
+        }
+      }
+    },
+    {
+      "name": "parse extended case-4",
+      "op": "apdu.parse",
+      "input": {
+        "raw": "00860000000100000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff0100"
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "86",
+          "p1": "00",
+          "p2": "00",
+          "data": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "parse round-trips: header-read fields re-encode short",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "comment": "round-trip pin: parse('00b00000000004') yields these fields; canonical re-encode is the short form",
+      "input": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 4
+      },
+      "expect": {
+        "out": {
+          "wire": "00b0000004"
+        }
+      }
+    },
+    {
+      "name": "encode case-2 short: READ BINARY Le=223 (DF) - the standard profile's chunk",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "04",
+        "data": "",
+        "le": 223
+      },
+      "expect": {
+        "out": {
+          "wire": "00b00004df"
+        }
+      }
+    },
+    {
+      "name": "encode extended READ BINARY Le=1024 -> 00 04 00 (the extended-length read shape)",
+      "op": "apdu.encode",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "04",
+        "data": "",
+        "le": 1024
+      },
+      "expect": {
+        "out": {
+          "wire": "00b00004000400"
+        }
+      }
+    },
+    {
+      "name": "parse malformed: empty",
+      "op": "apdu.parse",
+      "input": {
+        "raw": ""
+      },
+      "expect": {
+        "error": "UnexpectedError"
+      }
+    },
+    {
+      "name": "parse malformed: shorter than a header",
+      "op": "apdu.parse",
+      "input": {
+        "raw": "00a402"
+      },
+      "expect": {
+        "error": "UnexpectedError"
+      }
+    },
+    {
+      "name": "parse malformed: Lc inconsistent with body",
+      "op": "apdu.parse",
+      "input": {
+        "raw": "00a4020c05011e"
+      },
+      "expect": {
+        "error": "UnexpectedError"
+      }
+    },
+    {
+      "name": "parse malformed: dangling extended prefix",
+      "op": "apdu.parse",
+      "input": {
+        "raw": "00b000000000"
+      },
+      "expect": {
+        "error": "UnexpectedError"
+      }
+    },
+    {
+      "name": "response 90 00 returns data",
+      "op": "apdu.response",
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 4
+        },
+        "responses": [
+          {
+            "data": "60145f01",
+            "sw": "9000"
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "data": "60145f01",
+          "sw": "9000"
+        }
+      }
+    },
+    {
+      "name": "response 69 82 throws ResponseError",
+      "op": "apdu.response",
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 4
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6982"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response 6A 82 throws ResponseError",
+      "op": "apdu.response",
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "a4",
+          "p1": "02",
+          "p2": "0c",
+          "data": "0103",
+          "le": -1
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6a82"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response 61 XX consumed by GET RESPONSE loop, never surfaces",
+      "op": "apdu.response",
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 16
+        },
+        "responses": [
+          {
+            "data": "2021222324252627",
+            "sw": "6108"
+          },
+          {
+            "data": "28292a2b2c2d2e2f",
+            "sw": "9000"
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "data": "202122232425262728292a2b2c2d2e2f",
+          "sw": "9000"
+        }
+      }
+    },
+    {
+      "name": "response 62 82 on SELECT throws ResponseError (the end-of-file tolerance is READ-scoped)",
+      "op": "apdu.response",
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "a4",
+          "p1": "02",
+          "p2": "0c",
+          "data": "0103",
+          "le": -1
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6282"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response 63 00 on INS 82 passes as success",
+      "op": "apdu.response",
+      "runners": [
+        "swift"
+      ],
+      "comment": "upstream's && status check lets any SW ending 00 through; its 63 00 -> InvalidMRZKey branch is dead code",
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "82",
+          "p1": "00",
+          "p2": "00",
+          "data": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657",
+          "le": 256
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6300"
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "data": "",
+          "sw": "6300"
+        }
+      }
+    },
+    {
+      "name": "response 63 00 on INS 82 throws InvalidMRZKey",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "82",
+          "p1": "00",
+          "p2": "00",
+          "data": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657",
+          "le": 256
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6300"
+          }
+        ]
+      },
+      "expect": {
+        "error": "InvalidMRZKey"
+      }
+    },
+    {
+      "name": "response 63 CF on INS 82 throws ResponseError (upstream)",
+      "op": "apdu.response",
+      "runners": [
+        "swift"
+      ],
+      "comment": "sw2 CF is not 00, so upstream's check fires; the counter range maps to a generic ResponseError there",
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "82",
+          "p1": "00",
+          "p2": "00",
+          "data": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657",
+          "le": 256
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "63cf"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response 63 CF on INS 82 throws InvalidMRZKey",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "82",
+          "p1": "00",
+          "p2": "00",
+          "data": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657",
+          "le": 256
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "63cf"
+          }
+        ]
+      },
+      "expect": {
+        "error": "InvalidMRZKey"
+      }
+    },
+    {
+      "name": "response 67 00 passes as success",
+      "op": "apdu.response",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "86",
+          "p1": "00",
+          "p2": "00",
+          "data": "7c00",
+          "le": 231
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6700"
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "data": "",
+          "sw": "6700"
+        }
+      }
+    },
+    {
+      "name": "response 67 00 throws ResponseError",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "86",
+          "p1": "00",
+          "p2": "00",
+          "data": "7c00",
+          "le": 231
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6700"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response 62 82 on READ BINARY throws ResponseError (upstream)",
+      "op": "apdu.response",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 160
+        },
+        "responses": [
+          {
+            "data": "606162636465666768696a6b6c6d6e6f",
+            "sw": "6282"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response 62 82 on READ BINARY returns partial data",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 160
+        },
+        "responses": [
+          {
+            "data": "606162636465666768696a6b6c6d6e6f",
+            "sw": "6282"
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "data": "606162636465666768696a6b6c6d6e6f",
+          "sw": "6282"
+        }
+      }
+    },
+    {
+      "name": "response 63 00 on INS B0 throws ResponseError (the InvalidMRZKey mapping is scoped to INS 82)",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 4
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6300"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response 63 00 on INS 86 throws ResponseError (PACE layer owns GA)",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "86",
+          "p1": "00",
+          "p2": "00",
+          "data": "7c00",
+          "le": 231
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6300"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response 6C 50 retried once with exact Le",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "comment": "retried command's exact Le is pinned by the read_6c transcript",
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 160
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6c50"
+          },
+          {
+            "data": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f",
+            "sw": "9000"
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "data": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f",
+          "sw": "9000"
+        }
+      }
+    },
+    {
+      "name": "response second 6C propagates as ResponseError (single retry)",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 160
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "6c50"
+          },
+          {
+            "data": "",
+            "sw": "6c50"
+          }
+        ]
+      },
+      "expect": {
+        "error": "ResponseError"
+      }
+    },
+    {
+      "name": "response zero-byte 90 00 passes through send (the zero-progress guard is the loop's)",
+      "op": "apdu.response",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 4
+        },
+        "responses": [
+          {
+            "data": "",
+            "sw": "9000"
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "data": "",
+          "sw": "9000"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 69 82",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "69",
+        "sw2": "82"
+      },
+      "expect": {
+        "out": {
+          "message": "Security status not satisfied"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 6a 82",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "6a",
+        "sw2": "82"
+      },
+      "expect": {
+        "out": {
+          "message": "File not found"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 67 00",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "67",
+        "sw2": "00"
+      },
+      "expect": {
+        "out": {
+          "message": "Wrong length"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 90 00",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "90",
+        "sw2": "00"
+      },
+      "expect": {
+        "out": {
+          "message": "Success"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 6e 00",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "6e",
+        "sw2": "00"
+      },
+      "expect": {
+        "out": {
+          "message": "Class not supported"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 62 82",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "62",
+        "sw2": "82"
+      },
+      "expect": {
+        "out": {
+          "message": "End of file/record reached before reading Le bytes"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 61 0a",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "61",
+        "sw2": "0a"
+      },
+      "expect": {
+        "out": {
+          "message": "SW2 indicates the number of response bytes still available - (10 bytes still available)"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 64 00",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "64",
+        "sw2": "00"
+      },
+      "expect": {
+        "out": {
+          "message": "State of non-volatile memory unchanged (SW2=00, other values are RFU)"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 6c e7",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "sw1": "6c",
+        "sw2": "e7"
+      },
+      "expect": {
+        "out": {
+          "message": "Wrong length Le: SW2 indicates the exact length - (exact length :231)"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 63 c0",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "comment": "corrected row: upstream's 0x0C dictionary key never matched the 63 CX range",
+      "input": {
+        "sw1": "63",
+        "sw2": "c0"
+      },
+      "expect": {
+        "out": {
+          "message": "Counter provided by X (valued from 0 to 15) (exact meaning depending on the command)"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 63 cf",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "comment": "corrected row: upstream fell through to the unknown-SW fallback",
+      "input": {
+        "sw1": "63",
+        "sw2": "cf"
+      },
+      "expect": {
+        "out": {
+          "message": "Counter provided by X (valued from 0 to 15) (exact meaning depending on the command)"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 63 0c",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "comment": "corrected row: upstream returned the counter message for the literal sw2 0x0C",
+      "input": {
+        "sw1": "63",
+        "sw2": "0c"
+      },
+      "expect": {
+        "out": {
+          "message": "Unknown error - sw1: 0x63, sw2 - 0x0C "
+        }
+      }
+    },
+    {
+      "name": "statusMessages 6b 00",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "comment": "corrected row: upstream message carried a stray trailing ]",
+      "input": {
+        "sw1": "6b",
+        "sw2": "00"
+      },
+      "expect": {
+        "out": {
+          "message": "Wrong parameter(s) P1-P2"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 68 00",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "comment": "a non-ISO SW seen in the wild after a failed PACE step parses without crash",
+      "input": {
+        "sw1": "68",
+        "sw2": "00"
+      },
+      "expect": {
+        "out": {
+          "message": "No information given"
+        }
+      }
+    },
+    {
+      "name": "statusMessages 99 77",
+      "op": "apdu.statusMessages",
+      "runners": [
+        "dart"
+      ],
+      "comment": "unknown/non-ISO SW parses without crash",
+      "input": {
+        "sw1": "99",
+        "sw2": "77"
+      },
+      "expect": {
+        "out": {
+          "message": "Unknown error - sw1: 0x99, sw2 - 0x77 "
+        }
+      }
+    },
+    {
+      "name": "commandBuild getChallenge (Le=8)",
+      "op": "apdu.commandBuild",
+      "input": {
+        "method": "getChallenge",
+        "args": {}
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "84",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 8
+        }
+      }
+    },
+    {
+      "name": "commandBuild doMutualAuthentication (Le=256)",
+      "op": "apdu.commandBuild",
+      "input": {
+        "method": "doMutualAuthentication",
+        "args": {
+          "cmdData": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657"
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "82",
+          "p1": "00",
+          "p2": "00",
+          "data": "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051525354555657",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "commandBuild selectFile",
+      "op": "apdu.commandBuild",
+      "input": {
+        "method": "selectFile",
+        "args": {
+          "tag": "011e"
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "a4",
+          "p1": "02",
+          "p2": "0c",
+          "data": "011e",
+          "le": -1
+        }
+      }
+    },
+    {
+      "name": "commandBuild selectPassportApplication (no Le)",
+      "op": "apdu.commandBuild",
+      "input": {
+        "method": "selectPassportApplication",
+        "args": {}
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "a4",
+          "p1": "04",
+          "p2": "0c",
+          "data": "a0000002471001",
+          "le": -1
+        }
+      }
+    },
+    {
+      "name": "commandBuild sendMSESetATMutualAuth (no Le)",
+      "op": "apdu.commandBuild",
+      "input": {
+        "method": "sendMSESetATMutualAuth",
+        "args": {
+          "oid": "0.4.0.127.0.7.2.2.4.2.2",
+          "keyType": 1
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f00070202040202830101",
+          "le": -1
+        }
+      }
+    },
+    {
+      "name": "commandBuild sendMSESetATMutualAuth with parameterId DO84",
+      "op": "apdu.commandBuild",
+      "runners": [
+        "dart"
+      ],
+      "comment": "upstream never emits DO84 (its signature has no parameterId); 9303-11 4.4.4.1 requires it when domain parameters are ambiguous",
+      "input": {
+        "method": "sendMSESetATMutualAuth",
+        "args": {
+          "oid": "0.4.0.127.0.7.2.2.4.2.2",
+          "keyType": 1,
+          "parameterId": 13
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f0007020204020283010184010d",
+          "le": -1
+        }
+      }
+    },
+    {
+      "name": "commandBuild sendGeneralAuthenticate non-last (chaining CLA)",
+      "op": "apdu.commandBuild",
+      "input": {
+        "method": "sendGeneralAuthenticate",
+        "args": {
+          "data": "",
+          "isLast": false
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "10",
+          "ins": "86",
+          "p1": "00",
+          "p2": "00",
+          "data": "7c00",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "commandBuild sendGeneralAuthenticate last with explicit Le",
+      "op": "apdu.commandBuild",
+      "input": {
+        "method": "sendGeneralAuthenticate",
+        "args": {
+          "data": "810400010203",
+          "lengthExpected": 231,
+          "isLast": true
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "00",
+          "ins": "86",
+          "p1": "00",
+          "p2": "00",
+          "data": "7c06810400010203",
+          "le": 231
+        }
+      }
+    }
+  ]
+}

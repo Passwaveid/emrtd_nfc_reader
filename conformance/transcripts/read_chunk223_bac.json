@@ -1,0 +1,157 @@
+{
+  "transcript": "read_chunk223_bac",
+  "schemaVersion": 1,
+  "description": "A 1078-byte DG2 read at the standard chunk of 223 (0xDF) under BAC 3DES secure messaging; five body chunks after the header read, each full chunk answered with a 244-byte response frame (DO87 1+2+225 ‖ DO99 4 ‖ DO8E 10 ‖ SW 2), the frame arithmetic that makes 223 fit both the 261-byte and the 253-byte transport caps. Handshake material is ICAO 9303 P11 App D.3 (rndIcc/kicc/RND.IFD/K.IFD as in bac_session_efcom); the file bytes and every protected response are sim-synthesized. Both runners: maxDataLengthToRead is applied through overrideDataAmountToRead on each.",
+  "session": {
+    "secureMessaging": "bac",
+    "mrzKey": "L898902C<369080619406236",
+    "rng": "781723860c06c2260b795240cb7049b01c19b33e32804f0b"
+  },
+  "drive": {
+    "op": "selectFileAndRead",
+    "args": {
+      "tag": "0102",
+      "maxDataLengthToRead": 223
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "wire": "0084000008",
+      "resp": {
+        "data": "4608f91988702212",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "82",
+        "p1": "00",
+        "p2": "00",
+        "data": "72c29c2371cc9bdb65b779b8e8d37b29ecc154aa56a8799fae2f498f76ed92f25f1448eea8ad90a7",
+        "le": 256
+      },
+      "wire": "008200002872c29c2371cc9bdb65b779b8e8d37b29ecc154aa56a8799fae2f498f76ed92f25f1448eea8ad90a700",
+      "resp": {
+        "data": "46b9342a41396cd7386bf5803104d7ce7393f6376d480ffb18c26ea6698b56d7267d1577dc8014e1",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "8709017ee71ba621262e3e8e080ae656fa5d224240",
+        "le": 256
+      },
+      "wire": "0ca4020c158709017ee71ba621262e3e8e080ae656fa5d22424000",
+      "resp": {
+        "data": "990290008e08b0c2d7da6238bb14",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "9701048e080ddfc2e251ada63c",
+        "le": 256
+      },
+      "wire": "0cb000000d9701048e080ddfc2e251ada63c00",
+      "resp": {
+        "data": "8709011e7bfa41f3883127990290008e081d133e1a609fe4f6",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "04",
+        "data": "9701df8e08c14de9fece8f0d49",
+        "le": 256
+      },
+      "wire": "0cb000040d9701df8e08c14de9fece8f0d4900",
+      "resp": {
+        "data": "8781e101f6891aecbb848db5263f25ae2cb07098262b8e6955b24426dd3d3f35487852f5b6838ccc3ea4f70f95ac5d044ac0cc2f72030d22207a30943a94e0c30dc7c589464deee8f51f2c8863c6cf0fef0d2cab8d3636160bf062396b9fdfd4bc6f51d86e5ddd0373d3d6957a79713c1881e44e268f7dd60bdd2c9426d8e3c0ddd6027d3c430dc401c71d8caf9ae3c317c82289ae0c9e7646275e39bc2b55818d7c568973a56dd467f1f2e90dfddf687832b58bb21495ee6462b62d515d1dddfdd8583bbd6dd3423b3aabc995ef1c07b0837f160f3f74f4940fd11a789c3fa1a9ddb0f7990290008e081a264b692b66a40c",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "e3",
+        "data": "9701df8e0853c9fb2b1f660eb5",
+        "le": 256
+      },
+      "wire": "0cb000e30d9701df8e0853c9fb2b1f660eb500",
+      "resp": {
+        "data": "8781e1012833712c505511c24d9e0f45d68a4d660b9345585f04c77e9eb5cea60af84f3d4d6050073a46fc0d05061f2a20955ac59524c048a2a557a264b889a912391b7fdeb5ee69acd8156deeef44c02b63f1b3d511f330da683fc7d87530db52fdc476bc1479024ef2fa9d408e7652facc5e9360065026dcda1d19cab4f37cc00dbd453be8ea01e293a2ca1297ae5cd9038868bf554c958381f75c2f73c61c9d372109cc88040258899b41d1d22f21299b47c7124d7e70bf1af734fb3016103dcc4930a998c3a9f703a00d02c89451774327fc3c12c52d337e583df887f800ab0242ce990290008e0847fbf588e5d8942b",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "b0",
+        "p1": "01",
+        "p2": "c2",
+        "data": "9701df8e08b5e75f9f1bb26657",
+        "le": 256
+      },
+      "wire": "0cb001c20d9701df8e08b5e75f9f1bb2665700",
+      "resp": {
+        "data": "8781e1012c920dc211b7200b67180655945569eda549e30b78bf8ef89fa9b4dc2c9effef16c48e0f045f8030913b749ec6218e0e58c5508107bf34003291610348a102517a8464c1618be0708df6a69695e541f94d721a82b21192eb87c64af8c0134ed5ef829c1b3d0d423160bb2ae5bb96955f619e7d1c8a4022c343d156d7b86ef0d895a95e500e23ed426acaa9127691b670dc8bd2456cde425c1573dc9aa84bf7c585f52ab8d6d379cad68fe1bca55fef574d259f731562087a36cbc1822630f03c7e25cda7419ccc5d5083f28ff15882e19831f2568e1372e26f238308a7c03353990290008e08a9c9fa7de37b39cc",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "b0",
+        "p1": "02",
+        "p2": "a1",
+        "data": "9701df8e084c5c8a25f5d1c1e7",
+        "le": 256
+      },
+      "wire": "0cb002a10d9701df8e084c5c8a25f5d1c1e700",
+      "resp": {
+        "data": "8781e101a1b06fe77264fa267a76d207fb01dfe57cfac8b6fd0b323ce1fa87ff8b11be482e2f3a14861ad8e37560554c8ae8acdf552798511cf76def26d6b5698de615be22871638b895e3396441ae5b4c21c6a79ff44b217e22027a37fc438d673f2f6b3a73ff6ff2d5a17856685c985d9f9da7628bb7f43e6cbdf381cf6616d6f8d1aecdc43b47b2b8d30d4cbcfd6513d10fdc53294a3a1f9365a43cac4599fbae2a8c33a4a872388e9a8d0e667a3b5f533fe05cc86422cf71b1515b2878f38a55cbdbf0d7b51647eadceeedeb64924576780c4a367d23ac3c265381401f6b556348dd990290008e084dbdc88a268e4c09",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "b0",
+        "p1": "03",
+        "p2": "80",
+        "data": "9701b68e08bf97e75c6a6d3274",
+        "le": 256
+      },
+      "wire": "0cb003800d9701b68e08bf97e75c6a6d327400",
+      "resp": {
+        "data": "8781b901441141df4b8363806eb1add46548a7423d79f5e9f1f6b62a5dc5a37fc7ac8677f8ead7b2b214a28d43d3ecf7b0021fad249854cee9912ceee04580894e7029699e8a7ea353de612cfa74df71004cf440cf51a1bb36832a90dd9a16804c7c80ca3a5aa38a9615d2c0f740e46d57285f6adfa794f502629a8cd51559a93652b056b06f66597a7b1c0cc5dcb66e967b81d4f67aedd2377e5a256a16ada803c7f2fd1d0fbc0390343a979e79ea4e449fd5a4db381f0a7e22ebfd990290008e08e9b9c64dd6fa8587",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": "758204327f6182042d0201017f60820425a10887020101880200085f2e820416464143003031300000000416000100000408000001020300000000000100000000000100005a0078010200000000ffd8ffe000104a46494600010100000100010000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeef101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeef101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeef101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeef101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f6061ffd9"
+  }
+}

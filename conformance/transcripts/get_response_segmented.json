@@ -1,0 +1,79 @@
+{
+  "transcript": "get_response_segmented",
+  "schemaVersion": 1,
+  "description": "61 XX drives the raw GET RESPONSE loop; chunks concatenate before the (absent here) unprotect",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "selectFileAndRead",
+    "args": {
+      "tag": "011e"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "011e",
+        "le": null
+      },
+      "wire": "00a4020c02011e",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 4
+      },
+      "wire": "00b0000004",
+      "resp": {
+        "data": "60102021",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "02",
+        "data": "",
+        "le": 16
+      },
+      "wire": "00b0000210",
+      "resp": {
+        "data": "2021222324252627",
+        "sw": "6108"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "c0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "wire": "00c0000008",
+      "resp": {
+        "data": "28292a2b2c2d2e2f",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": "6010202122232425262728292a2b2c2d2e2f"
+  }
+}

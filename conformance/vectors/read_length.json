@@ -1,0 +1,388 @@
+{
+  "suite": "read_length",
+  "schemaVersion": 1,
+  "description": "fitReadLength. The largest READ BINARY length whose response frame fits the transport cap, secure-messaging overhead included (DO87 1+L+1+pad(N), DO99 4, DO8E 10, SW 2; pad = ISO 9797-1 method 2 to the cipher block; L = BER width of the DO87 content). Covers the frame-size rows at the 261-byte AOSP constant and the 253-byte Broadcom-era figure, the no-SM N+2 rule and the 1024-byte extended shape. Dart-only: upstream clamps nothing (CoreNFC owned the transport).",
+  "runners": [
+    "dart"
+  ],
+  "cases": [
+    {
+      "name": "no SM: data + SW, 160 at 261",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 160,
+        "maxTransceiveLength": 261,
+        "smBlockSize": null
+      },
+      "expect": {
+        "out": {
+          "length": 160
+        }
+      }
+    },
+    {
+      "name": "no SM: 256 at 261",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 256,
+        "maxTransceiveLength": 261,
+        "smBlockSize": null
+      },
+      "expect": {
+        "out": {
+          "length": 256
+        }
+      }
+    },
+    {
+      "name": "no SM: 0x200 at 261 fits 259",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 512,
+        "maxTransceiveLength": 261,
+        "smBlockSize": null
+      },
+      "expect": {
+        "out": {
+          "length": 259
+        }
+      }
+    },
+    {
+      "name": "no SM: 223 over a 100-byte transport fits 98",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 223,
+        "maxTransceiveLength": 100,
+        "smBlockSize": null
+      },
+      "expect": {
+        "out": {
+          "length": 98
+        }
+      }
+    },
+    {
+      "name": "3DES at 261: 160 (188-byte frame)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 160,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 160
+        }
+      }
+    },
+    {
+      "name": "3DES at 261: 223 (244-byte frame)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 223,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 223
+        }
+      }
+    },
+    {
+      "name": "3DES at 261: 224 (252-byte frame)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 224,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 224
+        }
+      }
+    },
+    {
+      "name": "3DES at 261: 231 (252-byte frame)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 231,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 231
+        }
+      }
+    },
+    {
+      "name": "3DES at 261: 239 (260-byte frame, the arithmetic maximum)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 239,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 239
+        }
+      }
+    },
+    {
+      "name": "3DES at 261: 240 does not fit (268) -> 239",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 240,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 239
+        }
+      }
+    },
+    {
+      "name": "3DES at 261: 256 does not fit (285) -> 239",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 256,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 239
+        }
+      }
+    },
+    {
+      "name": "AES at 261: 160 (196-byte frame)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 160,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 160
+        }
+      }
+    },
+    {
+      "name": "AES at 261: 223 (244-byte frame)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 223,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 223
+        }
+      }
+    },
+    {
+      "name": "AES at 261: 224 (260-byte frame)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 224,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 224
+        }
+      }
+    },
+    {
+      "name": "AES at 261: 239 (260-byte frame)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 239,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 239
+        }
+      }
+    },
+    {
+      "name": "AES at 261: 240 does not fit (277) -> 239",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 240,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 239
+        }
+      }
+    },
+    {
+      "name": "AES at 261: 256 does not fit (293) -> 239",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 256,
+        "maxTransceiveLength": 261,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 239
+        }
+      }
+    },
+    {
+      "name": "3DES at 253: 223 fits",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 223,
+        "maxTransceiveLength": 253,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 223
+        }
+      }
+    },
+    {
+      "name": "AES at 253: 223 fits",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 223,
+        "maxTransceiveLength": 253,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 223
+        }
+      }
+    },
+    {
+      "name": "3DES at 253: 256 requested -> 231",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 256,
+        "maxTransceiveLength": 253,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 231
+        }
+      }
+    },
+    {
+      "name": "AES at 253: 256 requested -> 223 (224 is 260)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 256,
+        "maxTransceiveLength": 253,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 223
+        }
+      }
+    },
+    {
+      "name": "AES at 253: 224 requested -> 223",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 224,
+        "maxTransceiveLength": 253,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 223
+        }
+      }
+    },
+    {
+      "name": "AES extended: 1024 needs a 1061-byte frame (L = 3)",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 1024,
+        "maxTransceiveLength": 1061,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 1024
+        }
+      }
+    },
+    {
+      "name": "AES extended: 1024 at 1060 -> 1023",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 1024,
+        "maxTransceiveLength": 1060,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 1023
+        }
+      }
+    },
+    {
+      "name": "3DES extended: 1024 at 4096",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 1024,
+        "maxTransceiveLength": 4096,
+        "smBlockSize": 8
+      },
+      "expect": {
+        "out": {
+          "length": 1024
+        }
+      }
+    },
+    {
+      "name": "total: a cap nothing fits yields 1",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 223,
+        "maxTransceiveLength": 10,
+        "smBlockSize": 16
+      },
+      "expect": {
+        "out": {
+          "length": 1
+        }
+      }
+    },
+    {
+      "name": "total: requested 1 at cap 2 without SM",
+      "op": "readLength.fit",
+      "input": {
+        "requested": 1,
+        "maxTransceiveLength": 2,
+        "smBlockSize": null
+      },
+      "expect": {
+        "out": {
+          "length": 1
+        }
+      }
+    }
+  ]
+}

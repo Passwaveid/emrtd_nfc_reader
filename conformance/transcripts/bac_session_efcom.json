@@ -1,0 +1,96 @@
+{
+  "transcript": "bac_session_efcom",
+  "schemaVersion": 1,
+  "description": "First full BAC session: GET CHALLENGE -> EXTERNAL AUTHENTICATE -> SM-protected SELECT + READ of EF.COM. Handshake and first two protected exchanges are ICAO 9303 P11 App D.3/D.4 verbatim (injected RND.IFD/K.IFD via the RNG seam); the final READ re-reads from offset 2 with Le 0x14 - the implementation flow, not App D's offset-4 flow - with a synthesized chip response (port-generated, OpenSSL-cross-checked keys). Protected commands are asserted byte-identical, pinning the SSC trajectory implicitly.",
+  "session": {
+    "secureMessaging": "bac",
+    "mrzKey": "L898902C<369080619406236",
+    "rng": "781723860c06c2260b795240cb7049b01c19b33e32804f0b"
+  },
+  "drive": {
+    "op": "selectFileAndRead",
+    "args": {
+      "tag": "011e"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "84",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 8
+      },
+      "wire": "0084000008",
+      "resp": {
+        "data": "4608f91988702212",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "82",
+        "p1": "00",
+        "p2": "00",
+        "data": "72c29c2371cc9bdb65b779b8e8d37b29ecc154aa56a8799fae2f498f76ed92f25f1448eea8ad90a7",
+        "le": 256
+      },
+      "wire": "008200002872c29c2371cc9bdb65b779b8e8d37b29ecc154aa56a8799fae2f498f76ed92f25f1448eea8ad90a700",
+      "resp": {
+        "data": "46b9342a41396cd7386bf5803104d7cedc122b9132139baf2eedc94ee178534f2f2d235d074d7449",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "8709016375432908c044f68e08bf8b92d635ff24f8",
+        "le": 256
+      },
+      "wire": "0ca4020c158709016375432908c044f68e08bf8b92d635ff24f800",
+      "resp": {
+        "data": "990290008e08fa855a5d4c50a8ed",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "9701048e08ed6705417e96ba55",
+        "le": 256
+      },
+      "wire": "0cb000000d9701048e08ed6705417e96ba5500",
+      "resp": {
+        "data": "8709019ff0ec34f9922651990290008e08ad55cc17140b2ded",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "0c",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "02",
+        "data": "9701148e084b5385e8856fb032",
+        "le": 256
+      },
+      "wire": "0cb000020d9701148e084b5385e8856fb03200",
+      "resp": {
+        "data": "871901340959f9de105b0c4a56d57afa0c5ab240612932685cdcbc990290008e0829842a2cebf24cff",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": "60145f0104303130365f36063034303030305c026175"
+  }
+}

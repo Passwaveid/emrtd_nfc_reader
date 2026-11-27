@@ -1,0 +1,80 @@
+{
+  "transcript": "card_access_select_fallback",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "MF-select refusal falls through to the direct SELECT-by-FID rung instead of failing the read; upstream propagated the refusal",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "readCardAccess",
+    "args": {}
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "00",
+        "p2": "0c",
+        "data": "3f00",
+        "le": null
+      },
+      "wire": "00a4000c023f00",
+      "resp": {
+        "data": "",
+        "sw": "6a86"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "011c",
+        "le": null
+      },
+      "wire": "00a4020c02011c",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 4
+      },
+      "wire": "00b0000004",
+      "resp": {
+        "data": "31143012",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "02",
+        "data": "",
+        "le": 20
+      },
+      "wire": "00b0000214",
+      "resp": {
+        "data": "3012060a04007f0007020204020202010202010d",
+        "sw": "9000"
+      }
+    }
+  ],
+  "expect": {
+    "out": "31143012060a04007f0007020204020202010202010d"
+  }
+}

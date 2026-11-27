@@ -1,0 +1,15 @@
+# package:lints (not flutter_lints) on purpose: all protocol/LDS code is
+# Flutter-free by construction; only lib/src/transport/ may import
+# Flutter or plugin APIs. Package-specific tweaks go below.
+include: package:lints/recommended.yaml
+
+analyzer:
+  errors:
+    # `pubspec.yaml` declares no `publish_to`, so the analyzer holds it to a
+    # publishable package's rules and objects to the vendored `flutter_nfc_kit`
+    # path dependency. That objection is correct: the path dependency is
+    # what blocks publication, and it is known, not something to rediscover
+    # on every run. **Delete this whole `analyzer:` block the moment the
+    # dependency is hosted**; leaving it would silence a real check for the
+    # next path dependency someone adds by accident.
+    invalid_dependency: ignore

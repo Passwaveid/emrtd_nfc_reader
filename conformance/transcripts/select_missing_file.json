@@ -1,0 +1,34 @@
+{
+  "transcript": "select_missing_file",
+  "schemaVersion": 1,
+  "description": "file not found propagates as a typed error",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "selectFileAndRead",
+    "args": {
+      "tag": "0103"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "0103",
+        "le": null
+      },
+      "wire": "00a4020c020103",
+      "resp": {
+        "data": "",
+        "sw": "6a82"
+      }
+    }
+  ],
+  "expect": {
+    "error": "ResponseError"
+  }
+}

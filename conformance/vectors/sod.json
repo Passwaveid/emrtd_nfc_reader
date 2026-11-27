@@ -1,0 +1,578 @@
+{
+  "suite": "sod",
+  "schemaVersion": 1,
+  "description": "EF.SOD construction + encapsulated-content extraction + the parseSODSignatureContent oracle: the eager-validation and oracle walks, the oracle's positional quirks, the out-of-range, error-type and mechanism-replacement deviations, and the digest-name splits",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "SOD construction: pkcs7CertificateData == body",
+      "op": "sod.parse",
+      "input": {
+        "data": "7781b53081b206092a864886f70d010702a081a43081a1020103310f300d060960864801650304020105003081800606678108010101a07604743072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "pkcs7CertificateData": "3081b206092a864886f70d010702a081a43081a1020103310f300d060960864801650304020105003081800606678108010101a07604743072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa"
+        }
+      }
+    },
+    {
+      "name": "getEncapsulatedContent extracts the LDSSecurityObject bytes",
+      "op": "sod.encapsulatedContent",
+      "input": {
+        "data": "7781b53081b206092a864886f70d010702a081a43081a1020103310f300d060960864801650304020105003081800606678108010101a07604743072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "content": "3072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21"
+        }
+      }
+    },
+    {
+      "name": "oracle: SHA-256 V1 SOD (with ldsVersionInfo) -> algo + DG hash map",
+      "op": "sod.parseSignatureContent",
+      "input": {
+        "data": "7781b53081b206092a864886f70d010702a081a43081a1020103310f300d060960864801650304020105003081800606678108010101a07604743072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+            "DG2": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21"
+          }
+        }
+      }
+    },
+    {
+      "name": "oracle: SHA-256 V0 SOD (no ldsVersionInfo, P10 App D) walks identically",
+      "op": "sod.parseSignatureContent",
+      "input": {
+        "data": "7781a43081a106092a864886f70d010702a08193308190020103310f300d0609608648016503040201050030700606678108010101a06604643062020100300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": "6ED8E9B3414D2DCA5E97162C769420151F6067DABC4B40542A6D0EEA318B6B22",
+            "DG2": "208E836344369FAA58C58C8C3360E50D2F0E604AD1321399A96BE69AE787CD21"
+          }
+        }
+      }
+    },
+    {
+      "name": "oracle: SHA-1 legacy-field SOD (P12 permits 224+ for issuance)",
+      "op": "sod.parseSignatureContent",
+      "input": {
+        "data": "776a306806092a864886f70d010702a05b3059020103310f300d0609608648016503040201050030390606678108010101a02f042d302b020100300906052b0e03021a0500301b30190201010414748a7e2d5bbd0c13f0639781a2aaa814dfad59e2310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA1",
+          "hashes": {
+            "DG1": "748A7E2D5BBD0C13F0639781A2AAA814DFAD59E2"
+          }
+        }
+      }
+    },
+    {
+      "name": "oracle: in-bounds oddities id 0 -> COM and 17 -> SOD accepted",
+      "op": "sod.parseSignatureContent",
+      "comment": "hash fill bytes must include one outside 0x20-0x7E: OpenSSL's ASN1 dump prints an all-printable OCTET STRING as text, which upstream's [HEX DUMP] scrape cannot read",
+      "input": {
+        "data": "7781cf3081cc06092a864886f70d010702a081be3081bb020103310f300d0609608648016503040201050030819a0606678108010101a0818f04818c308189020100300d06096086480165030402010500307530250201000420111111111111111111111111111111111111111111111111111111111111111130250201010420a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a230250201110420a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "COM": "1111111111111111111111111111111111111111111111111111111111111111",
+            "DG1": "A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2",
+            "SOD": "A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3A3"
+          }
+        }
+      }
+    },
+    {
+      "name": "oracle: last depth-2 digest OID wins",
+      "op": "sod.parseSignatureContent",
+      "input": {
+        "data": "77818630818306092a864886f70d010702a0763074020103310f300d0609608648016503040201050030540606678108010101a04a04483046020100300906052b0e03021a0500300d060960864801650304020105003027302502010104201111111111111111111111111111111111111111111111111111111111111111310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        }
+      }
+    },
+    {
+      "name": "oracle: unparseable INTEGER poisons the register; entry skipped, next pair records",
+      "op": "sod.parseSignatureContent",
+      "comment": "hash fill bytes must include one outside 0x20-0x7E: OpenSSL's ASN1 dump prints an all-printable OCTET STRING as text, which upstream's [HEX DUMP] scrape cannot read",
+      "input": {
+        "data": "7781ac3081a906092a864886f70d010702a0819b308198020103310f300d0609608648016503040201050030780606678108010101a06e046c306a020100300d060960864801650304020105003056302d02090100000000000000000420111111111111111111111111111111111111111111111111111111111111111130250201020420a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG2": "A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2"
+          }
+        }
+      }
+    },
+    {
+      "name": "oracle: id 18 out of dgList range skipped (upstream crash)",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7781a43081a106092a864886f70d010702a08193308190020103310f300d0609608648016503040201050030700606678108010101a06604643062020100300d06096086480165030402010500304e302502011204201111111111111111111111111111111111111111111111111111111111111111302502010104202222222222222222222222222222222222222222222222222222222222222222310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        }
+      }
+    },
+    {
+      "name": "oracle: negative INTEGER id skipped (upstream crash)",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7781a43081a106092a864886f70d010702a08193308190020103310f300d0609608648016503040201050030700606678108010101a06604643062020100300d06096086480165030402010500304e30250201ff04201111111111111111111111111111111111111111111111111111111111111111302502010104202222222222222222222222222222222222222222222222222222222222222222310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA256",
+          "hashes": {
+            "DG1": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        }
+      }
+    },
+    {
+      "name": "oracle: all entries out of range -> Unable to extract hashes",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "777a307806092a864886f70d010702a06b3069020103310f300d0609608648016503040201050030490606678108010101a03f043d303b020100300d060960864801650304020105003027302502011204201111111111111111111111111111111111111111111111111111111111111111310830060201010401aa"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "digest-name split: sha1WithRSAEncryption OID -> error (dart strict five-OID map)",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "777a307806092a864886f70d010702a06b3069020103310f300d0609608648016503040201050030490606678108010101a03f043d303b020100300d06092a864886f70d01010505003027302502010104201111111111111111111111111111111111111111111111111111111111111111310830060201010401aa"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "digest-name split: sha1WithRSAEncryption OID reads as SHA1 (upstream substring match)",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "777a307806092a864886f70d010702a06b3069020103310f300d0609608648016503040201050030490606678108010101a03f043d303b020100300d06092a864886f70d01010505003027302502010104201111111111111111111111111111111111111111111111111111111111111111310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "algorythm": "SHA1",
+          "hashes": {
+            "DG1": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown digest OID -> no algorithm found (dart)",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7779307706092a864886f70d010702a06a3068020103310f300d0609608648016503040201050030480606678108010101a03e043c303a020100300c06082a864886f70d020505003027302502010104201111111111111111111111111111111111111111111111111111111111111111310830060201010401aa"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "unknown digest OID -> no algorithm found (swift)",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "7779307706092a864886f70d010702a06a3068020103310f300d0609608648016503040201050030480606678108010101a03e043c303a020100300c06082a864886f70d020505003027302502010104201111111111111111111111111111111111111111111111111111111111111111310830060201010401aa"
+      },
+      "expect": {
+        "error": "UnableToParseSODHashes"
+      }
+    },
+    {
+      "name": "zero hash entries -> Unable to extract hashes (dart)",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7753305106092a864886f70d010702a0443042020103310f300d0609608648016503040201050030220606678108010101a01804163014020100300d060960864801650304020105003000310830060201010401aa"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "zero hash entries -> Unable to extract hashes (swift)",
+      "op": "sod.parseSignatureContent",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "7753305106092a864886f70d010702a0443042020103310f300d0609608648016503040201050030220606678108010101a01804163014020100300d060960864801650304020105003000310830060201010401aa"
+      },
+      "expect": {
+        "error": "UnableToParseSODHashes"
+      }
+    },
+    {
+      "name": "SOD(garbage) throws at construction (dart)",
+      "op": "sod.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7703308200"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "SOD(garbage) throws at construction (swift)",
+      "op": "sod.parse",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "7703308200"
+      },
+      "expect": {
+        "error": "UnableToParseASN1"
+      }
+    },
+    {
+      "name": "nested malformation fails eager whole-tree parse (dart)",
+      "op": "sod.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7706300402050001"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "nested malformation fails eager whole-tree parse (swift)",
+      "op": "sod.parse",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "7706300402050001"
+      },
+      "expect": {
+        "error": "UnableToParseASN1"
+      }
+    },
+    {
+      "name": "empty SOD body throws at construction (dart)",
+      "op": "sod.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7700"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "missing eContent -> Data in invalid format (dart)",
+      "op": "sod.encapsulatedContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "7739303706092a864886f70d010702a02a3028020103310f300d0609608648016503040201050030080606678108010101310830060201010401aa"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "missing eContent -> Data in invalid format (swift)",
+      "op": "sod.encapsulatedContent",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "7739303706092a864886f70d010702a02a3028020103310f300d0609608648016503040201050030080606678108010101310830060201010401aa"
+      },
+      "expect": {
+        "error": "UnableToExtractSignedDataFromPKCS7"
+      }
+    },
+    {
+      "name": "non-OCTET-STRING eContent -> noDataReturned (dart)",
+      "op": "sod.encapsulatedContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "773e303c06092a864886f70d010702a02f302d020103310f300d06096086480165030402010500300d0606678108010101a003020105310830060201010401aa"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "non-OCTET-STRING eContent -> noDataReturned (swift)",
+      "op": "sod.encapsulatedContent",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "773e303c06092a864886f70d010702a02f302d020103310f300d06096086480165030402010500300d0606678108010101a003020105310830060201010401aa"
+      },
+      "expect": {
+        "error": "UnableToExtractSignedDataFromPKCS7"
+      }
+    },
+    {
+      "name": "ContentInfo without [0] content -> Data in invalid format (dart)",
+      "op": "sod.encapsulatedContent",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "770d300b06092a864886f70d010702"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "ContentInfo without [0] content -> Data in invalid format (swift)",
+      "op": "sod.encapsulatedContent",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "770d300b06092a864886f70d010702"
+      },
+      "expect": {
+        "error": "UnableToExtractSignedDataFromPKCS7"
+      }
+    },
+    {
+      "name": "wrong content-type OIDs still parse: positional walk, no OID checks",
+      "op": "sod.encapsulatedContent",
+      "input": {
+        "data": "7781a53081a206082a864886f70d0205a08195308192020103310f300d06096086480165030402010500307206082a864886f70d0205a06604643062020100300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21310830060201010401aa"
+      },
+      "expect": {
+        "out": {
+          "content": "3062020100300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21"
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: corpus V1 object, member in third position -> 1.7 / 4.0.0",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "3072020101300d06096086480165030402010500300e1304303130371306303430303030304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": "1.7",
+          "unicodeVersion": "4.0.0"
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: V0 object has no member -> nulls",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "3062020100300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": null,
+          "unicodeVersion": null
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: V1 object, member fourth as 9303-10 §4.6.2.1 orders it -> 1.8 / 6.0.0",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "3072020101300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21300e1304303130381306303630303030"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": "1.8",
+          "unicodeVersion": "6.0.0"
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: one PrintableString child is not the member -> nulls",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "306a020101300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd213006130430313037"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": null,
+          "unicodeVersion": null
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: three PrintableString children are not the member -> nulls",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "3076020101300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd213012130430313037130630343030303013023031"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": null,
+          "unicodeVersion": null
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: a PrintableString in the algorithm parameters is not a version -> nulls",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "306602010030110609608648016503040201130430313037304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": null,
+          "unicodeVersion": null
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: non-digit ldsVersion -> nulls",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "3072020101300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21300e1304303161371306303430303030"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": null,
+          "unicodeVersion": null
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: three-character ldsVersion -> nulls",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "3071020101300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21300d13033130371306303430303030"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": null,
+          "unicodeVersion": null
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: four-character unicodeVersion -> nulls",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "3070020101300d06096086480165030402010500304e302502010104206ed8e9b3414d2dca5e97162c769420151f6067dabc4b40542a6d0eea318b6b2230250201020420208e836344369faa58c58c8c3360e50d2f0e604ad1321399a96be69ae787cd21300c130430313037130430343030"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": null,
+          "unicodeVersion": null
+        }
+      }
+    },
+    {
+      "name": "ldsVersionInfo: garbage bytes -> nulls, no throw",
+      "op": "sod.ldsVersionInfo",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "content": "3082ff00deadbeef"
+      },
+      "expect": {
+        "out": {
+          "ldsVersion": null,
+          "unicodeVersion": null
+        }
+      }
+    }
+  ]
+}

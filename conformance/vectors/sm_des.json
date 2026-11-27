@@ -1,0 +1,444 @@
+{
+  "suite": "sm_des",
+  "schemaVersion": 1,
+  "description": "DES secure messaging: ICAO 9303 P11 App D.4 protected-APDU worked example as an interleaved protect/unprotect session (pins the SSC trajectory, maskClassAndPad, DO87/DO97/DO8E construction and DO87 decrypt); DO97 boundary Le set {1,255,256,65536} plus the latent intToBin Le=300 split; MSE DO97 suppression; error-SW passthrough. Keys are the App D.3 session keys (pre-parity 24-byte forms); non-App-D expected values generated from the port and cross-checked against OpenSSL.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "ICAO P11 App D.4 session: SELECT EF.COM + READ BINARY(0,4) + READ BINARY(4,18)",
+      "op": "sm.exchange",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "exchanges": [
+          {
+            "cmd": {
+              "cla": "00",
+              "ins": "a4",
+              "p1": "02",
+              "p2": "0c",
+              "data": "011e",
+              "le": null
+            },
+            "rapdu": {
+              "data": "990290008e08fa855a5d4c50a8ed",
+              "sw": "9000"
+            }
+          },
+          {
+            "cmd": {
+              "cla": "00",
+              "ins": "b0",
+              "p1": "00",
+              "p2": "00",
+              "data": "",
+              "le": 4
+            },
+            "rapdu": {
+              "data": "8709019ff0ec34f9922651990290008e08ad55cc17140b2ded",
+              "sw": "9000"
+            }
+          },
+          {
+            "cmd": {
+              "cla": "00",
+              "ins": "b0",
+              "p1": "00",
+              "p2": "04",
+              "data": "",
+              "le": 18
+            },
+            "rapdu": {
+              "data": "871901fb9235f4e4037f2327dcc8964f1f9b8c30f42c8e2fff224a990290008e08c8b2787eaea07d74",
+              "sw": "9000"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "out": {
+          "exchanges": [
+            {
+              "cmd": {
+                "cla": "0c",
+                "ins": "a4",
+                "p1": "02",
+                "p2": "0c",
+                "data": "8709016375432908c044f68e08bf8b92d635ff24f8",
+                "le": 256
+              },
+              "rapdu": {
+                "data": "",
+                "sw": "9000"
+              }
+            },
+            {
+              "cmd": {
+                "cla": "0c",
+                "ins": "b0",
+                "p1": "00",
+                "p2": "00",
+                "data": "9701048e08ed6705417e96ba55",
+                "le": 256
+              },
+              "rapdu": {
+                "data": "60145f01",
+                "sw": "9000"
+              }
+            },
+            {
+              "cmd": {
+                "cla": "0c",
+                "ins": "b0",
+                "p1": "00",
+                "p2": "04",
+                "data": "9701128e082ea28a70f3c7b535",
+                "le": 256
+              },
+              "rapdu": {
+                "data": "04303130365f36063034303030305c026175",
+                "sw": "9000"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "DO97 boundary Le=1",
+      "op": "sm.protect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 1
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "9701018e083cb500f59875bb5b",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "DO97 boundary Le=255",
+      "op": "sm.protect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 255
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "9701ff8e08bc80aa5a55e0b04b",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "DO97 boundary Le=256 encodes 00",
+      "op": "sm.protect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 256
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "9701008e0839833b15c38c91b7",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "DO97 boundary Le=65536 encodes 00 00; without useExtendedMode the wrapper stays short-Le",
+      "op": "sm.protect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 65536
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "970200008e08c3a45de38d7bf3be",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "DO97 boundary Le=65536 with useExtendedMode -> extended wrapper",
+      "op": "sm.protect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "useExtendedMode": true,
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 65536
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "970200008e08c3a45de38d7bf3be",
+          "le": 65536
+        }
+      }
+    },
+    {
+      "name": "intToBin split (dart): Le=300 falls into intToBin - even-width 01 2c encoding",
+      "op": "sm.protect",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 300
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "9702012c8e0834f1b5e5383826a8",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "intToBin split (swift): Le=300 mangled to 12 0c by the odd-width intToBin quirk (latent - in-scope Le is 256/65536)",
+      "op": "sm.protect",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "",
+          "le": 300
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "00",
+          "data": "9702120c8e084f9c0326ecbb5375",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "MSE (INS 22) with Le=256 suppresses DO97",
+      "op": "sm.protect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "cmd": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f00070202040202",
+          "le": 256
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "871101f69ab05452294cf41ab17e5ce31bc9ef8e0842e2a3e21bd7c82a",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "MSE (INS 22) with Le=255 keeps DO97",
+      "op": "sm.protect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "cmd": {
+          "cla": "00",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "800a04007f00070202040202",
+          "le": 255
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "22",
+          "p1": "c1",
+          "p2": "a4",
+          "data": "871101f69ab05452294cf41ab17e5ce31bc9ef9701ff8e08011b5db74b24697e",
+          "le": 256
+        }
+      }
+    },
+    {
+      "name": "non-9000 SW returns the raw RAPDU unparsed",
+      "op": "sm.unprotect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "rapdu": {
+          "data": "",
+          "sw": "6300"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "",
+          "sw": "6300"
+        }
+      }
+    },
+    {
+      "name": "extended-length read: READ BINARY Le=1024 with useExtendedMode -> DO97 97 02 04 00, extended wrapper (Lc 00 00 0e, Le 00 00). Dart-only: upstream's odd-width intToBin quirk mangles 0x400 to 40 00",
+      "op": "sm.protect",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c226",
+        "useExtendedMode": true,
+        "cmd": {
+          "cla": "00",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "",
+          "le": 1024
+        }
+      },
+      "expect": {
+        "out": {
+          "cla": "0c",
+          "ins": "b0",
+          "p1": "00",
+          "p2": "04",
+          "data": "970204008e08fe45306486730c06",
+          "le": 65536
+        }
+      }
+    },
+    {
+      "name": "extended-length read: unprotect a 1024-byte READ BINARY response - three-byte DO87 length (87 82 xx xx) decoded and decrypted",
+      "op": "sm.unprotect",
+      "input": {
+        "algo": "DES",
+        "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+        "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+        "ssc": "887022120c06c227",
+        "rapdu": {
+          "data": "878204090156e42c416b85f2f1b2a387be2a3f56b489b2d74861b149a62373462ee6a6ab1e1eb8702003f218c9148d075dcb28433297b1829bc4ca3a5e7d162a6c138daab732c9c64a4899766eb9cc2956d417b96a040677fb611a732aecdb8255c316a3c75d62bd64143046d93c368f159064815ce7535facc7e12304a4dfb67bd59f78a571dc70852aad6cef9e0880079112d8a4bdf19b906c325dd22e59cfd76236c975938c7255442f2847edc6357a8833c27da3f78e76274db7da6e78f99667778cb8263c214e2a621cb905aacc1e89a66af0910f4ede1eb1e2b62cfcc37247747c67b93c7888b32235d0f5ee18e79ca3ef6a905a43cc87cd2a37d2230d1edbc5f8a389459c1a4e976cdabe9554bb77ff73e835ecb45004d26ea18db644af0cd8970f8878b924a38e1ceb3a9cb3584c0da923cd6b24d51728b4697f4f7414025040097671b56c5e76f720ba9554b47f67647a3b16b82494c9a1c2c20e0634fa461211adca6f6cd20fc03a853d8e08c13d54eb872f222cc98f1106c8d60111ffaa01362ec82bbe82d64ea7847bc7ef162cc3d5832c3ecb0eb7fe82e3a837abc9828e59dacd4fceb7a7ff7a727a5bdc5cfed09f2613557590a3601fb9314bcf9fa97a546a885cf44c5b603c20389ede7b1a1609a81bf194d808c96c9dd3c382bdf88c0be76a239e24d2210b04bb084af58d31fb5bc2e09a187fb736a87221b932efacfe447b1223b5fab8e4de49ae2f4816f13689a1f18cb69b31be86dc7081ec17effe3c0587cdbc3c50f618f06a47d60eac8973291a5f25438189b8aec1fafc52cdf3b412398e9364b3cc555639a81f80e270c0a6bb0136a7ae816f2176c44ed10bbf6e95cb51b497aba3b5e38c79401b50775bda8f18a0947d0f04734d50abfa2d9bb56179298d0d70ed683d42484a8f520b463510a61788848eda7a04eaf1f1baa5c98e36e4e9891e615fd9418f57d2f3e98f3870b2dba51f6d56eb4b571a139ee44a5bc9595f94957bf70a76a4f506e66374e28a4de45f4dda3f68048759e86d350ff5a4ce893b427db15c0f0e64fd67d15687c04b0b512069b979765b39b7d47ceb7d6937feffbda81208cccd00ee096442fa731586342f987907c3cada13dd31903ebe4d4af36275626283aff948e35f9b56efef64dd5c89709491c11a1ccb0cd13129c69872318b3d862c5640b1cb1e9cb82799d13555d86c96eba6e26f62e4f0e7a8f52c4737a6b12768f348eb8c964241dabdeb0b4534cdaf9af539fc667c8ca042df6f2289f2a43ede4f64f106346682422830947d883456aa1ec2ab931ea4bc5a514671e6285f1c687261b73dd1f67f8205f17eb92a33111bce4afe823885e19870dfb031af7456b651f8c5d08138fa042a73d4ec1f14e9f9352a8cb5da19818e7b91bdc25d25bd5d7322832f792ea7cae6f6d6174cd8add71f542baf5819330dcca29fe119990290008e08f5e1fa965cfb6061",
+          "sw": "9000"
+        }
+      },
+      "expect": {
+        "out": {
+          "data": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+          "sw": "9000"
+        }
+      }
+    }
+  ]
+}

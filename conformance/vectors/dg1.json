@@ -1,0 +1,401 @@
+{
+  "suite": "dg1",
+  "schemaVersion": 1,
+  "description": "DG1 (MRZ) parsing: specimen MRZs, length-driven layout selection, two-byte-tag rule splits, crash-class deviations, dispatch redirection, field-anomaly pack",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "TD3 specimen (ICAO 9303 P4: ERIKSSON ANNA MARIA)",
+      "op": "dg1.parse",
+      "input": {
+        "data": "615b5f1f58505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c3136"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F1F": "PPUTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<L898902C36UTO7408122F3404159ZE184226B<<<<<16",
+            "5F03": "PP",
+            "5F28": "UTO",
+            "5B": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+            "5A": "L898902C3",
+            "5F04": "6",
+            "5F2C": "UTO",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "340415",
+            "5F06": "9",
+            "53": "ZE184226B<<<<<",
+            "5F02": "1",
+            "5F07": "6"
+          }
+        }
+      }
+    },
+    {
+      "name": "TD1 specimen (ICAO 9303 P5: I<UTO D23145890)",
+      "op": "dg1.parse",
+      "input": {
+        "data": "615d5f1f5a493c55544f443233313435383930373c3c3c3c3c3c3c3c3c3c3c3c3c3c3c37343038313232463132303431353955544f3c3c3c3c3c3c3c3c3c3c3c364552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F1F": "I<UTOD231458907<<<<<<<<<<<<<<<7408122F1204159UTO<<<<<<<<<<<6ERIKSSON<<ANNA<MARIA<<<<<<<<<<",
+            "5F03": "I<",
+            "5F28": "UTO",
+            "5A": "D23145890",
+            "5F04": "7",
+            "53": "<<<<<<<<<<<<<<<<<<<<<<<<<<",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "120415",
+            "5F06": "9",
+            "5F2C": "UTO",
+            "5F07": "6",
+            "5B": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<"
+          }
+        }
+      }
+    },
+    {
+      "name": "TD2 hand-built 72-char MRZ (no on-disk spec authority: pins upstream parseTd2)",
+      "op": "dg1.parse",
+      "input": {
+        "data": "614b5f1f48493c55544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c4432333134353839303755544f3734303831323246313230343135393c3c3c3c3c3c3c36"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F1F": "I<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<D231458907UTO7408122F1204159<<<<<<<6",
+            "5F03": "I<",
+            "5F28": "UTO",
+            "5B": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<<",
+            "5A": "D23145890",
+            "5F04": "7",
+            "5F2C": "UTO",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "120415",
+            "5F06": "9",
+            "53": "<<<<<<<",
+            "5F07": "6"
+          }
+        }
+      }
+    },
+    {
+      "name": "89-byte body parses TD3-shaped at fixed offsets",
+      "op": "dg1.parse",
+      "input": {
+        "data": "615c5f1f59505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c31363c"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F1F": "PPUTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<L898902C36UTO7408122F3404159ZE184226B<<<<<16<",
+            "5F03": "PP",
+            "5F28": "UTO",
+            "5B": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+            "5A": "L898902C3",
+            "5F04": "6",
+            "5F2C": "UTO",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "340415",
+            "5F06": "9",
+            "53": "ZE184226B<<<<<",
+            "5F02": "1",
+            "5F07": "6"
+          }
+        }
+      }
+    },
+    {
+      "name": "91-byte body parses TD3-shaped at fixed offsets",
+      "op": "dg1.parse",
+      "input": {
+        "data": "615e5f1f5b505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c31363c3c3c"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F1F": "PPUTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<L898902C36UTO7408122F3404159ZE184226B<<<<<16<<<",
+            "5F03": "PP",
+            "5F28": "UTO",
+            "5B": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+            "5A": "L898902C3",
+            "5F04": "6",
+            "5F2C": "UTO",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "340415",
+            "5F06": "9",
+            "53": "ZE184226B<<<<<",
+            "5F02": "1",
+            "5F07": "6"
+          }
+        }
+      }
+    },
+    {
+      "name": "non-UTF8 field bytes -> \"53\" and \"5F1F\" keys absent",
+      "op": "dg1.parse",
+      "input": {
+        "data": "615b5f1f58505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a4531ff34323236423c3c3c3c3c3136"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F03": "PP",
+            "5F28": "UTO",
+            "5B": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+            "5A": "L898902C3",
+            "5F04": "6",
+            "5F2C": "UTO",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "340415",
+            "5F06": "9",
+            "5F02": "1",
+            "5F07": "6"
+          }
+        }
+      }
+    },
+    {
+      "name": "field-anomaly: name with no << separator (Brunei shape)",
+      "op": "dg1.parse",
+      "input": {
+        "data": "615b5f1f58505055544f4552494b53534f4e414e4e414d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135395a45313834323236423c3c3c3c3c3136"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F1F": "PPUTOERIKSSONANNAMARIA<<<<<<<<<<<<<<<<<<<<<<L898902C36UTO7408122F3404159ZE184226B<<<<<16",
+            "5F03": "PP",
+            "5F28": "UTO",
+            "5B": "ERIKSSONANNAMARIA<<<<<<<<<<<<<<<<<<<<<<",
+            "5A": "L898902C3",
+            "5F04": "6",
+            "5F2C": "UTO",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "340415",
+            "5F06": "9",
+            "53": "ZE184226B<<<<<",
+            "5F02": "1",
+            "5F07": "6"
+          }
+        }
+      }
+    },
+    {
+      "name": "field-anomaly: TD1 optional data with leading < filler (Norwegian shape)",
+      "op": "dg1.parse",
+      "input": {
+        "data": "615d5f1f5a493c55544f443233313435383930373c313233343536373839303c3c3c3c37343038313232463132303431353955544f3c3c3c3c3c3c3c3c3c3c3c364552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F1F": "I<UTOD231458907<1234567890<<<<7408122F1204159UTO<<<<<<<<<<<6ERIKSSON<<ANNA<MARIA<<<<<<<<<<",
+            "5F03": "I<",
+            "5F28": "UTO",
+            "5A": "D23145890",
+            "5F04": "7",
+            "53": "<1234567890<<<<<<<<<<<<<<<",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "120415",
+            "5F06": "9",
+            "5F2C": "UTO",
+            "5F07": "6",
+            "5B": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<"
+          }
+        }
+      }
+    },
+    {
+      "name": "field-anomaly: personal-number check digit position carries <",
+      "op": "dg1.parse",
+      "input": {
+        "data": "615b5f1f58505055544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c4c38393839303243333655544f3734303831323246333430343135393c3c3c3c3c3c3c3c3c3c3c3c3c3c3c36"
+      },
+      "expect": {
+        "out": {
+          "elements": {
+            "5F1F": "PPUTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<L898902C36UTO7408122F3404159<<<<<<<<<<<<<<<6",
+            "5F03": "PP",
+            "5F28": "UTO",
+            "5B": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+            "5A": "L898902C3",
+            "5F04": "6",
+            "5F2C": "UTO",
+            "5F57": "740812",
+            "5F05": "2",
+            "5F35": "F",
+            "59": "340415",
+            "5F06": "9",
+            "53": "<<<<<<<<<<<<<<",
+            "5F02": "<",
+            "5F07": "6"
+          }
+        }
+      }
+    },
+    {
+      "name": "two-byte-tag rule split: inner 6F 1F reads as single-byte tag 6F (dart, fixed)",
+      "op": "dg1.parse",
+      "runners": [
+        "dart"
+      ],
+      "comment": "verifyTag failure with actualTag 0x6F (BER low-five-bits rule); the dart-side actualTag is additionally pinned by a unit test",
+      "input": {
+        "data": "61046f1f0141"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "two-byte-tag rule split: inner 6F 1F reads as two-byte tag 6F1F (upstream low-nibble rule)",
+      "op": "dg1.parse",
+      "runners": [
+        "swift"
+      ],
+      "comment": "verifyTag failure with actualTag 0x6F1F",
+      "input": {
+        "data": "61046f1f0141"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "short TD3-shaped body -> InvalidDataPassed",
+      "op": "dg1.parse",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "61225f1f1f503c55544f4552494b53534f4e3c3c414e4e413c4d415249413c3c3c3c3c3c"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "parseDG empty input -> UnknownTag",
+      "op": "dg.parseDG",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": ""
+      },
+      "expect": {
+        "error": "UnknownTag"
+      }
+    },
+    {
+      "name": "parseDG 1-byte blob dispatches then CannotDecodeASN1Length",
+      "op": "dg.parseDG",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "61"
+      },
+      "expect": {
+        "error": "CannotDecodeASN1Length"
+      }
+    },
+    {
+      "name": "parseDG 3-byte blob dispatches then walk error",
+      "op": "dg.parseDG",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "615b5f"
+      },
+      "expect": {
+        "error": "TagNotValid"
+      }
+    },
+    {
+      "name": "parseDG unknown tag (4+ bytes) -> UnknownTag",
+      "op": "dg.parseDG",
+      "input": {
+        "data": "99010000"
+      },
+      "expect": {
+        "error": "UnknownTag"
+      }
+    },
+    {
+      "name": "parseDG unknown tag (3 bytes) -> UnknownTag (upstream: header-slice crash)",
+      "op": "dg.parseDG",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "990100"
+      },
+      "expect": {
+        "error": "UnknownTag"
+      }
+    },
+    {
+      "name": "DG7 tag dispatches to DataGroup7 (not redirected), whose parse rejects first tag 0xAA",
+      "op": "dg.parseDG",
+      "input": {
+        "data": "6703aabbcc"
+      },
+      "expect": {
+        "error": "InvalidResponse"
+      }
+    },
+    {
+      "name": "redirected DG15 stays hashable by the oracle (DG14 is parsed, not redirected)",
+      "op": "dg.hash",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6f03aabbcc",
+        "algorythm": "SHA256"
+      },
+      "expect": {
+        "out": {
+          "hash": "14ddeb68e8996883d4a410c07150041dc502e71b2bbec66fe9d8e5d82f8af5b4"
+        }
+      }
+    },
+    {
+      "name": "DG3 tag dispatches to NotImplementedDG on both runners",
+      "op": "dg.parseDG",
+      "input": {
+        "data": "6303aabbcc"
+      },
+      "expect": {
+        "out": {
+          "type": "NotImplementedDG",
+          "datagroupType": "Unknown",
+          "body": "aabbcc"
+        }
+      }
+    }
+  ]
+}

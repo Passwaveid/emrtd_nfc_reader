@@ -1,0 +1,136 @@
+{
+  "suite": "atr_info",
+  "schemaVersion": 1,
+  "description": "parseExtendedLengthInfo. The ISO/IEC 7816-4 7F66 extended-length information template (two INTEGER DOs: maximum command APDU, then maximum response APDU; the layout OpenSC's sc_parse_ef_atr_content decodes) found among the interindustry DOs of EF.ATR/INFO (9303-10 \u00a73.11.1), or of an ATS historical-bytes payload. Total: absent and malformed shapes are present:false, never a throw. Dart-only: upstream never reads EF.ATR/INFO.",
+  "runners": [
+    "dart"
+  ],
+  "cases": [
+    {
+      "name": "7F66 present: two INTEGERs, command then response (OpenSC layout)",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "4301007f66080202080002020800"
+      },
+      "expect": {
+        "out": {
+          "present": true,
+          "maxCommandBytes": 2048,
+          "maxResponseBytes": 2048
+        }
+      }
+    },
+    {
+      "name": "7F66 with different command/response sizes and 1-byte INTEGERs",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "7f660602017f0201ff"
+      },
+      "expect": {
+        "out": {
+          "present": true,
+          "maxCommandBytes": 127,
+          "maxResponseBytes": 255
+        }
+      }
+    },
+    {
+      "name": "7F66 after other interindustry DOs (43, 47, 4F)",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "4301004703b001c04f07a00000024710017f66080202100002021000"
+      },
+      "expect": {
+        "out": {
+          "present": true,
+          "maxCommandBytes": 4096,
+          "maxResponseBytes": 4096
+        }
+      }
+    },
+    {
+      "name": "absent: DOs without a 7F66",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "4301004703b001c04f07a0000002471001"
+      },
+      "expect": {
+        "out": {
+          "present": false
+        }
+      }
+    },
+    {
+      "name": "absent: empty file",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": ""
+      },
+      "expect": {
+        "out": {
+          "present": false
+        }
+      }
+    },
+    {
+      "name": "malformed: 7F66 with a single INTEGER",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "7f660402020800"
+      },
+      "expect": {
+        "out": {
+          "present": false
+        }
+      }
+    },
+    {
+      "name": "malformed: 7F66 whose children are not INTEGERs",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "7f66080402080004020800"
+      },
+      "expect": {
+        "out": {
+          "present": false
+        }
+      }
+    },
+    {
+      "name": "malformed: truncated 7F66",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "7f660802020800"
+      },
+      "expect": {
+        "out": {
+          "present": false
+        }
+      }
+    },
+    {
+      "name": "malformed: an empty INTEGER",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "7f6606020002020800"
+      },
+      "expect": {
+        "out": {
+          "present": false
+        }
+      }
+    },
+    {
+      "name": "ATS historical bytes in COMPACT-TLV state nothing",
+      "op": "atrInfo.parse",
+      "input": {
+        "data": "80318066b184"
+      },
+      "expect": {
+        "out": {
+          "present": false
+        }
+      }
+    }
+  ]
+}

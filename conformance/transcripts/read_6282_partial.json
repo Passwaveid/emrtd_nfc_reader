@@ -1,0 +1,67 @@
+{
+  "transcript": "read_6282_partial",
+  "schemaVersion": 1,
+  "runners": [
+    "dart"
+  ],
+  "description": "End of file before Le bytes ends the read loop keeping accumulated data; upstream threw the whole read away",
+  "session": {
+    "secureMessaging": "none"
+  },
+  "drive": {
+    "op": "selectFileAndRead",
+    "args": {
+      "tag": "011e"
+    }
+  },
+  "steps": [
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "a4",
+        "p1": "02",
+        "p2": "0c",
+        "data": "011e",
+        "le": null
+      },
+      "wire": "00a4020c02011e",
+      "resp": {
+        "data": "",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "00",
+        "data": "",
+        "le": 4
+      },
+      "wire": "00b0000004",
+      "resp": {
+        "data": "60206061",
+        "sw": "9000"
+      }
+    },
+    {
+      "cmd": {
+        "cla": "00",
+        "ins": "b0",
+        "p1": "00",
+        "p2": "02",
+        "data": "",
+        "le": 32
+      },
+      "wire": "00b0000220",
+      "resp": {
+        "data": "606162636465666768696a6b6c6d6e6f",
+        "sw": "6282"
+      }
+    }
+  ],
+  "expect": {
+    "out": "6020606162636465666768696a6b6c6d6e6f"
+  }
+}

@@ -1,0 +1,588 @@
+{
+  "suite": "dg14",
+  "schemaVersion": 1,
+  "description": "EF.DG14 SecurityInfos parsing: the same SET-of-SEQUENCE walk EF.CardAccess uses, producing typed CA rows and AA rows. Covers CA-only bodies, multi-key DG14s, the pubkey-only body that drives the infer-OID path, keyId-bearing entries, explicit-EC-params and both DH parameter encodings, a PACEInfo sharing the file, AA entries with and without a signature algorithm and alongside CA entries (first-wins ordering material for the AA verifier), the unparseable-SPKI skip (upstream's d2i_PUBKEY nil), and the malformed-entry and version-parse splits at all three version sites. AA-carrying bodies are shared cases. A split pair covers ICAO 9303 P11 App I's PACE-CAM public key, whose SubjectPublicKeyInfo uses the BSI standardizedDomainParameters AlgorithmIdentifier (0.4.0.127.0.7.1.2 plus an INTEGER parameterId) rather than id-ecPublicKey. The Dart parser resolves the parameterId through PACE's own P11 §9.5.1 Table 12 table and yields the key; OpenSSL does not know that OID, so upstream's d2i_PUBKEY nil-returns and SecurityInfo.getInstance skips the entry: a Divergences row, not a bug, since the nil-skip is upstream's documented contract.",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "CA-only DG14: ECDH-3DES info + id-PK-ECDH key, no keyIds",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e7c317a300f060a04007f000702020302010201013067060904007f000702020102305a301406072a8648ce3d020106092b2403030208010107034200045cc25ad351f76be4bfa9498f9d9ce70a72a612e4f39df830d956ec82cb3ce3536f038dfed769c8875badf25e6cc0b399a178a3a8e91174f99b66981efa14fcc9"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.1",
+              "version": 1,
+              "keyId": null
+            },
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.2",
+              "keyId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "multi-key DG14: two keyIds, two matching infos",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e8201023181ff3012060a04007f000702020302020201010201013012060a04007f00070202030201020101020102306a060904007f000702020102305a301406072a8648ce3d020106092b24030302080101070342000439d7966fecbc384a7c6cca6aa8163a38e0bde6130a542c47ee43bd66044572bd48bd4ddd275e67184db5fbe3f957674c9d2aef716a5952f02393edba3696ad040201013069060904007f0007020201023059301306072a8648ce3d020106082a8648ce3d030107034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7020102"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.2",
+              "version": 1,
+              "keyId": 1
+            },
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.1",
+              "version": 1,
+              "keyId": 2
+            },
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.2",
+              "keyId": 1
+            },
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.2",
+              "keyId": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "pubkey-only DG14 (the infer-OID path)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e6a31683066060904007f0007020201023059301306072a8648ce3d020106082a8648ce3d030107034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.2",
+              "keyId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "explicit-EC-params public key",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e8201733182016f300f060a04007f000702020302020201013082015a060904007f0007020201023082014b3082010306072a8648ce3d02013081f7020101302c06072a8648ce3d0101022100ffffffff00000001000000000000000000000000ffffffffffffffffffffffff305b0420ffffffff00000001000000000000000000000000fffffffffffffffffffffffc04205ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b031500c49d360886e704936a6678e1139d26b7819f7e900441046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5022100ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551020101034200045fe81cc7fb7e41a3eb257eb565c7608a7d133e1098a0ab8777a3e07dd54aad91e15bb5f150e5b2a1df3e56cc14ac79031687ea81eadffb28c17dcb1cd7dffcc7"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.2",
+              "version": 1,
+              "keyId": null
+            },
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.2",
+              "keyId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "X9.42 DH public key with keyId 1",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e8201e5318201e13012060a04007f00070202030102020101020101308201c9060904007f000702020101308201b73082012c06072a8648ce3e02013082011f02818100b10b8f96a080e01dde92de5eae5d54ec52c99fbcfb06a3c69a6a9dca52d23b616073e28675a23d189838ef1e2ee652c013ecb4aea906112324975c3cd49b83bfaccbdd7d90c4bd7098488e9c219a73724effd6fae5644738faa31a4ff55bccc0a151af5f0dc8b4bd45bf37df365c1a65e68cfda76d4da708df1fb2bc2e4a437102818100a4d1cbd5c3fd34126765a442efb99905f8104dd258ac507fd6406cff14266d31266fea1e5c41564b777e690f5504f213160217b4b01b886a5e91547f9e2749f4d7fbd7d3b9a92ee1909d0d2263f80a76a6a24c087a091f531dbf0a0169b6a28ad662a4d18e73afa32d779d5918d08bc8858f4dcef97c2a24855e6eeb22b3b2e5021500f518aa8781a8df278aba4e7d64b7cb9d494623530381840002818066c8497988a154ea4873f3815f1ba844aaed722495cfbcf06dd303fee2505448a24f52ba1425e11fe73d8f4faf3317c1156c694f93bb1f8f45ab94ffc0be61eb993102abb4cddb5d888e0054137250545a72f9de78e7c6741fdc429ff7c1126b5df3e2b42cf16c4e0c18b9482f16097f82c3f843d043fccf390ea61ef09c3ee9020101"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.1.2",
+              "version": 1,
+              "keyId": 1
+            },
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.1",
+              "keyId": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "PKCS#3 DH public key",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e82014831820144300f060a04007f000702020301010201013082012f060904007f0007020201013082012030819506092a864886f70d01030130818702818100c9f5619b12f5e0cdd5d96fd95706c04f7cff8a1aa8ad101a558a754c054dfa56ccffc6791ccfb8f84fee5d3a8b63bf26aadb10103dff5085ff88daa1ee60134ca8877e244b5624bff3a819df55d5966d6c145085d94eb8fac110faf7248f16b4d16df50c98224accca4ff810e2dc15bca7906f45e2f26ab57748629b960540170201020381850002818100b5ca2fbcaeaa691880a68e0caf4d3a46cfb2d65f21030f28b3384898952505cef5a0569330dbdd3d83582d4e1965391c8aa9503ed37ac555d60fcf22734c9c622c2b3ed7f5550940fa1aae08a3e7832164a57313661b74df43d55daa1700eb4fce07a80e599d622bf00bffb6c04bc78a17c6270f41f285d5c75fde5a1a34b143"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.1.1",
+              "version": 1,
+              "keyId": null
+            },
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.1",
+              "keyId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unparseable SPKI (dart): the CA-pubkey entry is skipped, the info survives; upstream fails the whole file",
+      "op": "dg14.securityInfos",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6e253123300f060a04007f000702020302010201013010060904007f0007020201023003aabbcc"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.1",
+              "version": 1,
+              "keyId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unparseable SPKI (swift): a BER-invalid SPKI fails the whole DG14; eager ASN1_parse_dump",
+      "op": "dg14.securityInfos",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "6e253123300f060a04007f000702020302010201013010060904007f0007020201023003aabbcc"
+      },
+      "expect": {
+        "error": "UnableToParseASN1"
+      }
+    },
+    {
+      "name": "PACEInfo alongside CA entries (eID-shaped DG14)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e819131818e3012060a04007f0007020204020202010202010d300f060a04007f000702020302020201013067060904007f000702020102305a301406072a8648ce3d020106092b24030302080101070342000439d7966fecbc384a7c6cca6aa8163a38e0bde6130a542c47ee43bd66044572bd48bd4ddd275e67184db5fbe3f957674c9d2aef716a5952f02393edba3696ad04"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "PACEInfo",
+              "oid": "0.4.0.127.0.7.2.2.4.2.2",
+              "version": 2,
+              "parameterId": 13
+            },
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.2",
+              "version": 1,
+              "keyId": null
+            },
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.2",
+              "keyId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "CA version 0x0a parses to 10 (dart: DER INTEGER value)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e133111300f060a04007f0007020203020102010a"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.1",
+              "version": 10,
+              "keyId": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "CA version 0x0a parses to -1 (swift: Int(\"0A\") fails)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e133111300f060a04007f0007020203020102010a"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.1",
+              "version": -1,
+              "keyId": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "swift"
+      ]
+    },
+    {
+      "name": "CA version 0x10 parses to 16 (dart: DER INTEGER value)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e133111300f060a04007f00070202030201020110"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.1",
+              "version": 16,
+              "keyId": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "CA version 0x10 parses to 10 (swift: Int(\"10\") decimal)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e133111300f060a04007f00070202030201020110"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.1",
+              "version": 10,
+              "keyId": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "swift"
+      ]
+    },
+    {
+      "name": "malformed <2-child entry skipped (dart; upstream getChild(1)! crashes)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e21311f300c060a04007f00070202030201300f060a04007f00070202030202020101"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.2",
+              "version": 1,
+              "keyId": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "AA entry alongside a CA entry: both parsed",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e20311e300b0606678108010105020101300f060a04007f00070202030201020101"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 1,
+              "signatureAlgorithmOID": null
+            },
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.1",
+              "version": 1,
+              "keyId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AA entry with an ecdsa-plain-SHA256 signature algorithm",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e1b311930170606678108010105020101060a04007f00070101040103"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 1,
+              "signatureAlgorithmOID": "0.4.0.127.0.7.1.1.4.1.3"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AA entry without a signature algorithm (two-child SEQUENCE)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e0f310d300b0606678108010105020101"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 1,
+              "signatureAlgorithmOID": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "two AA entries plus CA entries: file order preserved (the AA verifier takes the first AA row)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e48314630170606678108010105020101060a04007f000701010401053012060a04007f0007020203020202010102010130170606678108010105020101060a04007f00070101040103"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 1,
+              "signatureAlgorithmOID": "0.4.0.127.0.7.1.1.4.1.5"
+            },
+            {
+              "type": "ChipAuthenticationInfo",
+              "oid": "0.4.0.127.0.7.2.2.3.2.2",
+              "version": 1,
+              "keyId": 1
+            },
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 1,
+              "signatureAlgorithmOID": "0.4.0.127.0.7.1.1.4.1.3"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AA version 0x0a parses to 10 (dart: DER INTEGER value)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e0f310d300b060667810801010502010a"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 10,
+              "signatureAlgorithmOID": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "AA version 0x0a parses to -1 (swift: Int(\"0A\") fails)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e0f310d300b060667810801010502010a"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": -1,
+              "signatureAlgorithmOID": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "swift"
+      ]
+    },
+    {
+      "name": "AA version 0x10 parses to 16 (dart: DER INTEGER value)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e0f310d300b0606678108010105020110"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 16,
+              "signatureAlgorithmOID": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "AA version 0x10 parses to 10 (swift: Int(\"10\") decimal)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e0f310d300b0606678108010105020110"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 10,
+              "signatureAlgorithmOID": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "swift"
+      ]
+    },
+    {
+      "name": "AA entry whose third child is not an OBJECT IDENTIFIER -> null sigAlg (dart-only: upstream stores the dump parser's rendering, which its friendly-name table misses; same digest default downstream, different intermediate)",
+      "op": "dg14.securityInfos",
+      "input": {
+        "data": "6e133111300f06066781080101050201010402aabb"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ActiveAuthenticationInfo",
+              "oid": "2.23.136.1.1.5",
+              "version": 1,
+              "signatureAlgorithmOID": null
+            }
+          ]
+        }
+      },
+      "runners": [
+        "dart"
+      ]
+    },
+    {
+      "name": "unparseable DG14 body -> InvalidASN1Value (dart; swift throws the dropped OpenSSLError)",
+      "op": "dg14.securityInfos",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6e03ffffff"
+      },
+      "expect": {
+        "error": "InvalidASN1Value"
+      }
+    },
+    {
+      "name": "App I PACE-CAM key split (dart): BSI standardizedDomainParameters SPKI (0.4.0.127.0.7.1.2 + INTEGER 13) -> parsed as brainpoolP256r1",
+      "op": "dg14.securityInfos",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "data": "6e6631643062060904007f0007020201023052300c060704007f0007010202010d034200041872709494399e7470a6431be25e83eee24fea568c2ed28db48e05db3a610dc884d256a40e35efcb59bf6753d3a489d28c7a4d973c2da138a6e7a4a08f68e16f02010d"
+      },
+      "expect": {
+        "out": {
+          "infos": [
+            {
+              "type": "ChipAuthenticationPublicKeyInfo",
+              "oid": "0.4.0.127.0.7.2.2.1.2",
+              "keyId": 13
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "App I PACE-CAM key split (swift): the same body; d2i_PUBKEY does not know the BSI OID, returns nil, and the entry is skipped",
+      "op": "dg14.securityInfos",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "data": "6e6631643062060904007f0007020201023052300c060704007f0007010202010d034200041872709494399e7470a6431be25e83eee24fea568c2ed28db48e05db3a610dc884d256a40e35efcb59bf6753d3a489d28c7a4d973c2da138a6e7a4a08f68e16f02010d"
+      },
+      "expect": {
+        "out": {
+          "infos": []
+        }
+      }
+    }
+  ]
+}

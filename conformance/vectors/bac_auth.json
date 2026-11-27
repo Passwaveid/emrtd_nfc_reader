@@ -1,0 +1,228 @@
+{
+  "suite": "bac_auth",
+  "schemaVersion": 1,
+  "description": "BAC authentication: ICAO 9303 P11 App D.2/D.3 worked example end-to-end (kmrz -> Kseed, basic access keys, mutual-auth cmd data with injected RND.IFD/K.IFD, sessionKeys -> KSenc/KSmac/SSC); split cases for the mutual-auth response, which upstream never authenticates (swift accepts tampered input, dart throws); composeMrzKey (a dart-only addition). deriveKey outputs are the pre-parity 24-byte forms (as in kdf_bac).",
+  "runners": [
+    "dart",
+    "swift"
+  ],
+  "cases": [
+    {
+      "name": "ICAO P11 App D.2 generateInitialKseed: kmrz -> SHA1[0..16]",
+      "op": "bac.generateInitialKseed",
+      "input": {
+        "kmrz": "L898902C<369080619406236"
+      },
+      "expect": {
+        "out": {
+          "kseed": "239ab9cb282daf66231dc5a4df6bfbae"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.1/D.2 deriveDocumentBasicAccessKeys (pre-parity 24-byte forms)",
+      "op": "bac.deriveDocumentBasicAccessKeys",
+      "input": {
+        "mrz": "L898902C<369080619406236"
+      },
+      "expect": {
+        "out": {
+          "ksenc": "ab94fcedf2664edfb9b291f85d7f77f2ab94fcedf2664edf",
+          "ksmac": "7862d9ece03c1bcd4d77089dcf1314427862d9ece03c1bcd"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.3 authentication: injected RND.IFD/K.IFD -> Eifd || Mifd",
+      "op": "bac.authentication",
+      "input": {
+        "mrz": "L898902C<369080619406236",
+        "rndIcc": "4608f91988702212",
+        "rndIfd": "781723860c06c226",
+        "kifd": "0b795240cb7049b01c19b33e32804f0b"
+      },
+      "expect": {
+        "out": {
+          "cmdData": "72c29c2371cc9bdb65b779b8e8d37b29ecc154aa56a8799fae2f498f76ed92f25f1448eea8ad90a7"
+        }
+      }
+    },
+    {
+      "name": "ICAO P11 App D.3 sessionKeys: mutual-auth response -> KSenc/KSmac/SSC",
+      "op": "bac.sessionKeys",
+      "input": {
+        "mrz": "L898902C<369080619406236",
+        "rndIcc": "4608f91988702212",
+        "rndIfd": "781723860c06c226",
+        "kifd": "0b795240cb7049b01c19b33e32804f0b",
+        "response": "46b9342a41396cd7386bf5803104d7cedc122b9132139baf2eedc94ee178534f2f2d235d074d7449"
+      },
+      "expect": {
+        "out": {
+          "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+          "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+          "ssc": "887022120c06c226"
+        }
+      }
+    },
+    {
+      "name": "mutual-auth response split (dart): tampered M.ICC -> InvalidResponseChecksum",
+      "op": "bac.sessionKeys",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "mrz": "L898902C<369080619406236",
+        "rndIcc": "4608f91988702212",
+        "rndIfd": "781723860c06c226",
+        "kifd": "0b795240cb7049b01c19b33e32804f0b",
+        "response": "46b9342a41396cd7386bf5803104d7cedc122b9132139baf2eedc94ee178534f2f2d235d074d74b6"
+      },
+      "expect": {
+        "error": "InvalidResponseChecksum"
+      }
+    },
+    {
+      "name": "mutual-auth response split (swift): tampered M.ICC accepted - response MAC never verified",
+      "op": "bac.sessionKeys",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "mrz": "L898902C<369080619406236",
+        "rndIcc": "4608f91988702212",
+        "rndIfd": "781723860c06c226",
+        "kifd": "0b795240cb7049b01c19b33e32804f0b",
+        "response": "46b9342a41396cd7386bf5803104d7cedc122b9132139baf2eedc94ee178534f2f2d235d074d74b6"
+      },
+      "expect": {
+        "out": {
+          "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+          "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+          "ssc": "887022120c06c226"
+        }
+      }
+    },
+    {
+      "name": "mutual-auth response split (dart): wrong RND.IFD echo (valid MAC) -> InvalidDataPassed",
+      "op": "bac.sessionKeys",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "mrz": "L898902C<369080619406236",
+        "rndIcc": "4608f91988702212",
+        "rndIfd": "781723860c06c226",
+        "kifd": "0b795240cb7049b01c19b33e32804f0b",
+        "response": "46b9342a41396cd79c865bebd5b30c59e1207520c68a29364c8f06af0dd59165112cc4210736ee87"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "mutual-auth response split (swift): wrong RND.IFD echo accepted - docstring claims the check, code never does it",
+      "op": "bac.sessionKeys",
+      "runners": [
+        "swift"
+      ],
+      "input": {
+        "mrz": "L898902C<369080619406236",
+        "rndIcc": "4608f91988702212",
+        "rndIfd": "781723860c06c226",
+        "kifd": "0b795240cb7049b01c19b33e32804f0b",
+        "response": "46b9342a41396cd79c865bebd5b30c59e1207520c68a29364c8f06af0dd59165112cc4210736ee87"
+      },
+      "expect": {
+        "out": {
+          "ksenc": "969ec03b1cbfe9ddd11ab1fed206ebe4969ec03b1cbfe9dd",
+          "ksmac": "f0ca1e1eb5adf208816b88dd579cc1f8f0ca1e1eb5adf208",
+          "ssc": "887022120c06c226"
+        }
+      }
+    },
+    {
+      "name": "sessionKeys truncated 39-byte response -> InvalidDataPassed (upstream slice-crashes; part of the mutual-auth response fix)",
+      "op": "bac.sessionKeys",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "mrz": "L898902C<369080619406236",
+        "rndIcc": "4608f91988702212",
+        "rndIfd": "781723860c06c226",
+        "kifd": "0b795240cb7049b01c19b33e32804f0b",
+        "response": "46b9342a41396cd7386bf5803104d7cedc122b9132139baf2eedc94ee178534f2f2d235d074d74"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    },
+    {
+      "name": "composeMrzKey: App D.2 components -> 24-char key (dart-only)",
+      "op": "bac.composeMrzKey",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "documentNumber": "L898902C<",
+        "dateOfBirth": "690806",
+        "dateOfExpiry": "940623"
+      },
+      "expect": {
+        "out": {
+          "mrzKey": "L898902C<369080619406236"
+        }
+      }
+    },
+    {
+      "name": "composeMrzKey: 8-char document number is <-padded to 9 before its check digit",
+      "op": "bac.composeMrzKey",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "documentNumber": "AB123456",
+        "dateOfBirth": "690806",
+        "dateOfExpiry": "940623"
+      },
+      "expect": {
+        "out": {
+          "mrzKey": "AB123456<469080619406236"
+        }
+      }
+    },
+    {
+      "name": "composeMrzKey: partially unknown date of birth keeps < fillers, which count 0 in the check digit (Part 3 4.8)",
+      "op": "bac.composeMrzKey",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "documentNumber": "L898902C<",
+        "dateOfBirth": "62<<<<",
+        "dateOfExpiry": "940623"
+      },
+      "expect": {
+        "out": {
+          "mrzKey": "L898902C<362<<<<89406236"
+        }
+      }
+    },
+    {
+      "name": "composeMrzKey: character outside the MRZ set -> InvalidDataPassed",
+      "op": "bac.composeMrzKey",
+      "runners": [
+        "dart"
+      ],
+      "input": {
+        "documentNumber": "l898902c<",
+        "dateOfBirth": "690806",
+        "dateOfExpiry": "940623"
+      },
+      "expect": {
+        "error": "InvalidDataPassed"
+      }
+    }
+  ]
+}
